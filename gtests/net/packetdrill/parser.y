@@ -1875,7 +1875,7 @@ add_addr_ip
 | ADDR '[' WORD '=' INET6_ADDR '(' STRING ')' ']' {
 	struct endpoint endpoint;
 	memset(&endpoint, 0, sizeof(endpoint));
-	struct ip_address ip_formatted = ipv6_parse($5);
+	struct ip_address ip_formatted = ipv6_parse($7);
 	endpoint.ip.ip.v6 = ip_formatted.ip.v6;
 	endpoint.ip.address_family = AF_INET6;
 	if (enqueue_var($3))
