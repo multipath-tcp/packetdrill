@@ -669,7 +669,7 @@ static void setenv_config(struct config *config)
 	safe_setenv("OPT_NON_FATAL", value);
 	sprintf(value, "%u", config->speed);
 	safe_setenv("OPT_SPEED", value);
-	sprintf(value, "%d", config->tolerance_usecs);
+	sprintf(value, "%ld", config->tolerance_usecs);
 	safe_setenv("OPT_TOLERANCE_USECS", value);
 	safe_setenv("OPT_TCP_TS_ECR_SCALED", config->tcp_ts_ecr_scaled ? "1" : "0");
 	sprintf(value, "%d", config->tcp_ts_tick_usecs);
