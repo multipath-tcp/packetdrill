@@ -29,5 +29,5 @@
 +0    poll([{fd=3, events=POLLIN, revents=POLLIN}], 1, 0) = 1
 +0    accept(3, ..., ...) = 4
 
-// no easy way to check for established status, anyhow write will just work
-+0    write(4, ..., 100) = 100
+// the msk is closed if the first subflow is closed before accept().
++0    write(4, ..., 100) = -1 (Broken pipe)
