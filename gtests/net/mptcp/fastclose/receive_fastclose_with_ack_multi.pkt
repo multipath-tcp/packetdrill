@@ -32,13 +32,13 @@
 +0.0    >                                .  1:1(0)        ack 1002                       <dss dack8=2002                 dll=0    nocs>
 
 // fastclose on the 2nd subflow, but old sequence numbers.
-+0.1    <                                .  1:1(0)                  win 450              <mp_fastclose>
++0.1    <                                .  1:1(0)        ack 1     win 450              <mp_fastclose>
 
 // no effect expected.
 +0.0    >                                .  1:1(0)        ack 1002                       <dss dack8=2002                 dll=0    nocs>
 
 // fastclose on the 2nd subflow, good sequence numbers.
-+0.1    <                                .  1002:1002(0)            win 450              <mp_fastclose>
++0.1    <                                .  1002:1002(0)  ack 1     win 450              <mp_fastclose>
 
 // expect peer to reset both subflows now:
 +0.0    >  addr[saddr0] > addr[caddr0]  R.  1:1(0)        ack 1001                       <mp_reset 0>
