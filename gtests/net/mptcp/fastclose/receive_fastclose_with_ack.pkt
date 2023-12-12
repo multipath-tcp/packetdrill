@@ -16,14 +16,14 @@
 +0.0     >   .  1:1(0)           ack 1001                       <dss dack8=1001 nocs>
 
 // send ack fastclose with a key that should not match.
-+0       <   .  1001:1001(0)               win 450              <mp_fastclose ckey=42>
++0       <   .  1001:1001(0)     ack 1     win 450              <mp_fastclose ckey=42>
 
 // more data, expect ack
 +1.0     <  P.  1001:2001(1000)  ack 1     win 450    <nop, nop, dss dack8=1    dsn8=1001 ssn=1001 dll=1000 nocs>
 +0.0     >   .  1:1(0)           ack 2001                       <dss dack8=2001 nocs>
 
 // send another ack fastclose, this time with matching key
-+0.1     <   .  2001:2001(0)               win 450              <mp_fastclose>
++0.1     <   .  2001:2001(0)     ack 1     win 450              <mp_fastclose>
 // expect peer to reset all subflows now:
 +0.01    >  R.  1:1(0)           ack 2001                       <mp_reset 0>
 
