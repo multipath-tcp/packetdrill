@@ -31,7 +31,7 @@
 +0      >                                .  1:1(0)           ack 1002                                                 <dss dack8=2002                    dll=0    nocs>
 
 // send rst option.  RST is not set, so it should have no effect.
-+0      <                                .  1002:1002(0)               win 256    <mp_reset 1>
++0      <                                .  1002:1002(0)     ack 1     win 256    <mp_reset 1>
 
 // again, this time with RST but out of window.
 +0.1    <                               R.  3001:3001(0)               win 450    <mp_reset 1>
