@@ -17,7 +17,7 @@
 +0       >   .  1:1(0)        ack 1                <dss dack4=1>
 
 // ignore, TCP RST flag not set
-+0       <   .  1:1(0)                  win 256    <mp_reset 1>
++0       <   .  1:1(0)        ack 1     win 256    <mp_reset 1>
 
 +0.0   write(4, ..., 1000) = 1000
 +0       >  P.  1:1001(1000)  ack 1                <dss dack4=1    dsn8=1 dll=1000 nocs, nop, nop>
