@@ -166,6 +166,7 @@ struct int_symbol platform_symbols_table[] = {
 #ifdef IPV6_MTU
 	{ IPV6_MTU,                         "IPV6_MTU"                        },
 #endif
+	{ IPV6_UNICAST_HOPS,                "IPV6_UNICAST_HOPS"               },
 	{ IPV6_TCLASS,                      "IPV6_TCLASS"                     },
 	{ IPV6_HOPLIMIT,                    "IPV6_HOPLIMIT"                   },
 
