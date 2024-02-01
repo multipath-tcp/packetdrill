@@ -2127,6 +2127,8 @@ static int find_or_create_socket_for_script_packet(
 		/* Is this a packet starting a new mptcp subflow? */
 		*socket = handle_mp_join_for_script_packet(state,
 							   packet, direction);
+		if (*socket != NULL)
+			return STATUS_OK;
 	} else {
 		*socket = create_socket_for_nontcp_script_packet(state, packet,
 								 direction);
