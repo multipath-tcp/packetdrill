@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """Run packetdrill across a set of scripts."""
 
@@ -34,8 +34,8 @@ class TestSet(object):
         tests.append(dirpath + '/' + filename)
     return sorted(tests)
 
-  def StartTest(self, path, variant, extra_args=None):
-    """Run a test using packetdrill in a subprocess."""
+  def CmdTest(self, path, variant, extra_args=None):
+    """Return a command to run a test using packetdrill in a subprocess."""
     bin_path = self.tools_path + '/' + 'packetdrill'
     nswrap_path = self.tools_path + '/' + 'in_netns.sh'
 
@@ -46,68 +46,66 @@ class TestSet(object):
     cmd.extend(self.default_args.split())
     if extra_args is not None:
       cmd.extend(extra_args.split())
+    if self.args['verbose'] > 1:
+      cmd.append('-' + 'v' * (self.args['verbose'] - 1))
     cmd.append(basename)
 
-    outfile = tempfile.TemporaryFile(mode='w+')
-    errfile = tempfile.TemporaryFile(mode='w+')
+    return (cmd, execdir, path, variant, basename)
 
-    process = subprocess.Popen(cmd, stdout=outfile, stderr=errfile, cwd=execdir)
-    if self.args['serialized']:
-      process.wait()
-    return (process, path, variant, outfile, errfile)
-
-  def StartTestIPv4(self, path):
-    """Run a packetdrill test over ipv4."""
-    return self.StartTest(
+  def CmdTestIPv4(self, path):
+    """Return a command to run a packetdrill test over ipv4."""
+    return self.CmdTest(
         path, 'ipv4',
         ('--ip_version=ipv4 '
-         '--local_ip=192.168.0.2 '
+         '--local_ip=192.168.0.1 '
          '--gateway_ip=192.168.0.1 '
          '--netmask_ip=255.255.0.0 '
          '--remote_ip=192.0.2.1/24 '
-         '-D TFO_COOKIE=de4f234f0f433a55 '
+         '-D TFO_COOKIE=3021b9d889017eeb '
+         '-D CODE=host_unreachable '
          '-D CMSG_LEVEL_IP=SOL_IP '
          '-D CMSG_TYPE_RECVERR=IP_RECVERR')
     )
 
-  def StartTestIPv6(self, path):
-    """Run a packetdrill test over ipv6."""
-    return self.StartTest(
+  def CmdTestIPv6(self, path):
+    """Return a command to run a packetdrill test over ipv6."""
+    return self.CmdTest(
         path, 'ipv6',
         ('--ip_version=ipv6 --mtu=1520 '
-         '--local_ip=fd3d:fa7b:d17d::0 '
-         '--gateway_ip=fd3d:fa7b:d17d:8888::0 '
-         '--remote_ip=2001:DB8::1/32 '
-         '-D TFO_COOKIE=6aa6ae70c288023b '
+         '--local_ip=fd3d:0a0b:17d6::1 '
+         '--gateway_ip=fd3d:0a0b:17d6:8888::1 '
+         '--remote_ip=fd3d:fa7b:d17d::1/32 '
+         '-D TFO_COOKIE=c1d1e9742a47a9bc '
          '-D CMSG_LEVEL_IP=SOL_IPV6 '
          '-D CMSG_TYPE_RECVERR=IPV6_RECVERR')
     )
 
-  def StartTestIPv4Mappedv6(self, path):
-    """Run a packetdrill test over ipv4-mapped-v6."""
-    return self.StartTest(
+  def CmdTestIPv4Mappedv6(self, path):
+    """Return a command to run a packetdrill test over ipv4-mapped-v6."""
+    return self.CmdTest(
         path, 'ipv4-mapped-v6',
         ('--ip_version=ipv4-mapped-ipv6 '
-         '--local_ip=192.168.0.2 '
+         '--local_ip=192.168.0.1 '
          '--gateway_ip=192.168.0.1 '
          '--netmask_ip=255.255.0.0 '
          '--remote_ip=192.0.2.1/24 '
-         '-D TFO_COOKIE=de4f234f0f433a55 '
+         '-D TFO_COOKIE=3021b9d889017eeb '
+         '-D CODE=host_unreachable '
          '-D CMSG_LEVEL_IP=SOL_IPV6 '
          '-D CMSG_TYPE_RECVERR=IPV6_RECVERR')
     )
 
-  def StartTests(self, tests):
+  def CmdsTests(self, tests):
     """Run every test in tests in all three variants (v4, v6, v4-mapped-v6)."""
-    procs = []
+    cmds = []
     for test in tests:
       if not test.endswith('v6.pkt'):
-        procs.append(self.StartTestIPv4(test))
-        procs.append(self.StartTestIPv4Mappedv6(test))
+        cmds.append(self.CmdTestIPv4(test))
+        cmds.append(self.CmdTestIPv4Mappedv6(test))
       if not test.endswith('v4.pkt'):
-        procs.append(self.StartTestIPv6(test))
+        cmds.append(self.CmdTestIPv6(test))
 
-    return procs
+    return cmds
 
   def Log(self, outfile, errfile):
     """Print a background process's stdout and stderr streams."""
@@ -118,12 +116,26 @@ class TestSet(object):
     errfile.seek(0)
     sys.stderr.write(errfile.read())
 
-  def PollTest(self, test):
-    """Test whether a test has finished and if so record its return value."""
-    process, path, variant, outfile, errfile = test
+  def StartTest(self, cmd, execdir, path, variant, basename):
+    """Run a packetdrill test"""
+    outfile = tempfile.TemporaryFile(mode='w+')
+    errfile = tempfile.TemporaryFile(mode='w+')
 
+    env = os.environ
+    if self.args['capture'] is not None:
+      fname = os.path.splitext(basename)[0] +  "_" + variant + ".pcap"
+      env = dict(env, TCPDUMP_OUTPUT=os.path.join(self.args['capture'], fname))
+
+    time_start = time.time()
+    process = subprocess.Popen(cmd, stdout=outfile, stderr=errfile, cwd=execdir,
+                               env=env)
+
+    return (process, path, variant, outfile, errfile, time_start)
+
+  def PollTest(self, process, path, variant, outfile, errfile, time_start, now):
+    """Test whether a test has finished and if so record its return value."""
     if process.poll() is None:
-      return False
+      return False, now - time_start >= self.max_runtime
 
     if not process.returncode:
       self.num_pass += 1
@@ -138,18 +150,34 @@ class TestSet(object):
         if self.args['log_on_error']:
           self.Log(outfile, errfile)
 
-    return True
+    return True, False
 
-  def PollTestSet(self, procs, time_start):
-    """Wait until a,l tests in procs have finished or until timeout."""
-    while time.time() - time_start < self.max_runtime and procs:
-      time.sleep(1)
+  def StartPollTestSet(self, cmds):
+    """Start and wait until all tests in procs have finished or until timeout."""
+    max_in_parallel = 1 if self.args['serialized'] else self.args['max_in_parallel']
+    if max_in_parallel == 0 or max_in_parallel > len(cmds):
+      max_in_parallel = len(cmds)
+
+    procs = []
+    while len(procs) < max_in_parallel:
+      procs.append(self.StartTest(*cmds.pop(0)))
+
+    timedouts = []
+    while procs:
+      time.sleep(.1)
+      now = time.time()
       for entry in procs:
-        if self.PollTest(entry):
-          procs.remove(entry)
+        stopped, timedout = self.PollTest(*entry, now)
 
-    self.num_timedout = len(procs)
-    for proc, path, variant, outfile, errfile in procs:
+        if stopped or timedout:
+          procs.remove(entry)
+          if cmds:
+            procs.append(self.StartTest(*cmds.pop(0)))
+          if timedout:
+            timedouts.append(entry)
+
+    self.num_timedout = len(timedouts)
+    for proc, path, variant, outfile, errfile, _ in timedouts:
       try:
         proc.kill()
       except:
@@ -165,8 +193,15 @@ class TestSet(object):
     tests = self.FindTests(path)
 
     time_start = time.time()
-    procs = self.StartTests(tests)
-    self.PollTestSet(procs, time_start)
+    cmds = self.CmdsTests(tests)
+
+    if self.args['dry_run']:
+      print('Dry-run mode:')
+      for cmd in cmds:
+        print(' '.join(cmd[0]))
+      return
+
+    self.StartPollTestSet(cmds)
 
     print(
         'Ran % 4d tests: % 4d passing, % 4d failing, % 4d timed out (%.2f sec): %s'     # pylint: disable=line-too-long
@@ -232,14 +267,20 @@ def ParseArgs():
   """Parse commandline arguments."""
   args = argparse.ArgumentParser()
   args.add_argument('path', default='.', nargs='?')
+  args.add_argument('-c', '--capture', metavar='DIR',
+                    help='capture packets in the specified directory')
   args.add_argument('-l', '--log_on_error', action='store_true',
                     help='requires verbose')
   args.add_argument('-L', '--log_on_success', action='store_true',
                     help='requires verbose')
   args.add_argument('-p', '--parallelize_dirs', action='store_true')
+  args.add_argument('-P', '--max_in_parallel', metavar='N', type=int, default=0,
+                    help="max number of tests running in parallel")
+  args.add_argument('--dry_run', action='store_true')
   args.add_argument('-s', '--subdirs', action='store_true')
   args.add_argument('-S', '--serialized', action='store_true')
-  args.add_argument('-v', '--verbose', action='store_true')
+  args.add_argument('-v', '--verbose', action='count', default=0,
+                    help="can be repeated to run packetdrill with -v")
   return vars(args.parse_args())
 
 

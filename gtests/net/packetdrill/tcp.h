@@ -61,11 +61,15 @@
 #define TCP_SAVED_SYN            28  /* Get SYN headers recorded for connection */
 #define TCP_REPAIR_WINDOW        29  /* Get/set window parameters */
 #define TCP_FASTOPEN_CONNECT     30  /* Attempt FastOpen with connect */
+#define TCP_FASTOPEN_KEY         33  /* Set the key for Fast Open (cookie) */
+#define TCP_FASTOPEN_NO_COOKIE   34  /* Enable TFO without a TFO cookie */
 
 #ifndef TCP_INQ
 #define TCP_INQ			 36
 #define TCP_CM_INQ		 TCP_INQ
 #endif
+
+#define TCP_TX_DELAY		 37
 
 /* TODO: remove these when netinet/tcp.h has them */
 #ifndef TCPI_OPT_ECN_SEEN

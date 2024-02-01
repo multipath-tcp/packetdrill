@@ -31,6 +31,7 @@
 #include <sys/ioctl.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <sys/socket.h>
 
 #ifdef linux
 
@@ -105,62 +106,103 @@ static void packet_socket_setup(struct packet_socket *psock)
 
 /* Add a filter so we only sniff packets we want. */
 void packet_socket_set_filter(struct packet_socket *psock,
-			      const struct ether_addr *client_ether_addr,
-			      const struct ip_address *client_live_ip)
+			      const struct ip_address *client_live_ip,
+			      u16 src_port,
+			      u16 dst_port)
 {
-	const u8 *client_ether = client_ether_addr->ether_addr_octet;
-
 	struct sock_fprog bpfcode;
 	struct sock_filter bpf_ipv4_src[] = {
-		/* this filter works for ethernet interfaces: */
-		/* tcpdump -p -n -s 0 -i lo -dd
-		 * "ether src 11:22:33:44:55:66 and ip src 1.2.3.4"
+		/* This filter is constructed to try to allow packetdrill
+		 * wire_server processes to only capture traffic under test.
+		 * It works for ethernet interfaces. The hex array dump is
+		 * copied verbatim from the output of the following tcpdump
+		 * command line on a Linux machine:
+		 *
+		 * tcpdump -p -n -s 0 -i lo -dd
+		 * "ip src 1.2.3.4 and "
+		 * "(src port 0xaabb or dst port 0xccdd or icmp)"
 		 */
-		{ 0x20, 0,  0, 0x00000008 },
-		{ 0x15, 0,  7, 0x33445566 },   /* ether: 33:44:55:66 */
-		{ 0x28, 0,  0, 0x00000006 },
-		{ 0x15, 0,  5, 0x00001122 },   /* ether: 11:22 */
 		{ 0x28, 0,  0, 0x0000000c },
-		{ 0x15, 0,  3, 0x00000800 },
+		{ 0x15, 0, 15, 0x00000800 },	/* ETHERTYPE_IP */
 		{ 0x20, 0,  0, 0x0000001a },
-		{ 0x15, 0,  1, 0x01020304 },   /* IPv4: 1.2.3.4 */
-		{  0x6, 0,  0, 0x0000ffff },
-		{  0x6, 0,  0, 0x00000000 },
+		{ 0x15, 0, 13, 0x01020304 },	/* IPv4: 1.2.3.4 */
+		{ 0x30, 0,  0, 0x00000017 },
+		{ 0x15, 2,  0, 0x00000084 },
+		{ 0x15, 1,  0, 0x00000006 },
+		{ 0x15, 0,  7, 0x00000011 },
+		{ 0x28, 0,  0, 0x00000014 },
+		{ 0x45, 7,  0, 0x00001fff },
+		{ 0xb1, 0,  0, 0x0000000e },
+		{ 0x48, 0,  0, 0x0000000e },
+		{ 0x15, 3,  0, 0x0000aabb },	/* src port 0xaabb */
+		{ 0x48, 0,  0, 0x00000010 },
+		{ 0x15, 1,  2, 0x0000ccdd },	/* dst port 0xccdd */
+		{ 0x15, 0,  1, 0x00000001 },
+		{ 0x06, 0,  0, 0x00040000 },
+		{ 0x06, 0,  0, 0x00000000 },
+
 	};
 	struct sock_filter bpf_ipv6_src[] = {
-		/* this filter works for ethernet interfaces: */
-		/* tcpdump -p -n -s 0 -i lo -dd
-		 * "ether src 11:22:33:44:55:66 and ip6 src 1:2:3:4:5:6:7:8" */
-		{ 0x20, 0,  0, 0x00000008 },
-		{ 0x15, 0, 13, 0x33445566 },   /* ether: 33:44:55:66 */
-		{ 0x28, 0,  0, 0x00000006 },
-		{ 0x15, 0, 11, 0x00001122 },   /* ether: 11:22 */
+		/* This filter is constructed to try to allow packetdrill
+		 * wire_server processes to only capture traffic under test.
+		 * It works for ethernet interfaces. The hex array dump is
+		 * copied verbatim from the output of the following tcpdump
+		 * command line on a Linux machine:
+		 *
+		 * tcpdump -p -n -s 0 -i lo -dd
+		 * "ip6 src 1:2:3:4:5:6:7:8 and "
+		 * "(src port 0xaabb or dst port 0xccdd or icmp6)
+		 */
 		{ 0x28, 0,  0, 0x0000000c },
-		{ 0x15, 0,  9, 0x000086dd },
+		{ 0x15, 0, 21, 0x000086dd },	/* ETHERTYPE_IPV6 */
 		{ 0x20, 0,  0, 0x00000016 },
-		{ 0x15, 0,  7, 0x00010002 },   /* IPv6: 1:2 */
+		{ 0x15, 0, 19, 0x00010002 },	/* IPv6: 1:2 */
 		{ 0x20, 0,  0, 0x0000001a },
-		{ 0x15, 0,  5, 0x00030004 },   /* IPv6: 3:4 */
+		{ 0x15, 0, 17, 0x00030004 },	/* IPv6: 3:4 */
 		{ 0x20, 0,  0, 0x0000001e },
-		{ 0x15, 0,  3, 0x00050006 },   /* IPv6: 5:6 */
+		{ 0x15, 0, 15, 0x00050006 },	/* IPv6: 5:6 */
 		{ 0x20, 0,  0, 0x00000022 },
-		{ 0x15, 0,  1, 0x00070008 },   /* IPv6: 7:8 */
-		{  0x6, 0,  0, 0x0000ffff },
-		{  0x6, 0,  0, 0x00000000 },
+		{ 0x15, 0, 13, 0x00070008 },	/* IPv6: 7:8 */
+		{ 0x30, 0,  0, 0x00000014 },
+		{ 0x15, 2,  0, 0x00000084 },
+		{ 0x15, 1,  0, 0x00000006 },
+		{ 0x15, 0,  4, 0x00000011 },
+		{ 0x28, 0,  0, 0x00000036 },
+		{ 0x15, 6,  0, 0x0000aabb },	/* src port 0xaabb */
+		{ 0x28, 0,  0, 0x00000038 },
+		{ 0x15, 4,  5, 0x0000ccdd },	/* dst port 0xccdd */
+		{ 0x15, 3,  0, 0x0000003a },
+		{ 0x15, 0,  3, 0x0000002c },
+		{ 0x30, 0,  0, 0x00000036 },
+		{ 0x15, 0,  1, 0x0000003a },
+		{ 0x06, 0,  0, 0x00040000 },
+		{ 0x06, 0,  0, 0x00000000 },
 	};
+	char ip_string[ADDR_STR_LEN];
+
+	DEBUGP("packet_socket_set_filter: ip: %s src: %u dst: %u\n",
+	       ip_to_string(client_live_ip, ip_string), src_port, dst_port);
 
 	if (client_live_ip->address_family == AF_INET) {
-		/* Fill in the client-side IPv6 address to look for. */
-		bpf_ipv4_src[7].k = ntohl(client_live_ip->ip.v4.s_addr);
+		/* Fill in the client-side IPv4 address to look for. */
+		bpf_ipv4_src[3].k = ntohl(client_live_ip->ip.v4.s_addr);
+		/* Fill in the src port to look for. */
+		bpf_ipv4_src[12].k = src_port;
+		/* Fill in the dst port to look for. */
+		bpf_ipv4_src[14].k = dst_port;
 
 		bpfcode.len	= ARRAY_SIZE(bpf_ipv4_src);
 		bpfcode.filter	= bpf_ipv4_src;
 	} else if (client_live_ip->address_family == AF_INET6) {
 		/* Fill in the client-side IPv6 address to look for. */
-		bpf_ipv6_src[7].k  = ntohl(client_live_ip->ip.v6.s6_addr32[0]);
-		bpf_ipv6_src[9].k  = ntohl(client_live_ip->ip.v6.s6_addr32[1]);
-		bpf_ipv6_src[11].k = ntohl(client_live_ip->ip.v6.s6_addr32[2]);
-		bpf_ipv6_src[13].k = ntohl(client_live_ip->ip.v6.s6_addr32[3]);
+		bpf_ipv6_src[3].k = ntohl(client_live_ip->ip.v6.s6_addr32[0]);
+		bpf_ipv6_src[5].k = ntohl(client_live_ip->ip.v6.s6_addr32[1]);
+		bpf_ipv6_src[7].k = ntohl(client_live_ip->ip.v6.s6_addr32[2]);
+		bpf_ipv6_src[9].k = ntohl(client_live_ip->ip.v6.s6_addr32[3]);
+		/* Fill in the src port to look for. */
+		bpf_ipv6_src[15].k = src_port;
+		/* Fill in the dst port to look for. */
+		bpf_ipv6_src[17].k = dst_port;
 
 		bpfcode.len	= ARRAY_SIZE(bpf_ipv6_src);
 		bpfcode.filter	= bpf_ipv6_src;
@@ -168,19 +210,15 @@ void packet_socket_set_filter(struct packet_socket *psock,
 		assert(!"bad address family");
 	}
 
-	/* Fill in the client-side ethernet address to look for. */
-	bpfcode.filter[1].k = ((client_ether[2] << 24) |
-			       (client_ether[3] << 16) |
-			       (client_ether[4] << 8)  |
-			       (client_ether[5]));
-	bpfcode.filter[3].k = ((client_ether[0] << 8)  |
-			       (client_ether[1]));
-
 	if (DEBUG_LOGGING) {
 		int i;
 		DEBUGP("filter constants:\n");
 		for (i = 0; i < bpfcode.len; ++i)
-			DEBUGP("0x%x\n", bpfcode.filter[i].k);
+			DEBUGP("{ 0x%02x, %3d, %3d, 0x%08x },\n",
+			       bpfcode.filter[i].code,
+			       bpfcode.filter[i].jt,
+			       bpfcode.filter[i].jf,
+			       bpfcode.filter[i].k);
 	}
 
 	/* Attach the filter. */
@@ -225,17 +263,39 @@ int packet_socket_writev(struct packet_socket *psock,
 }
 
 int packet_socket_receive(struct packet_socket *psock,
-			  enum direction_t direction,
+			  enum direction_t direction, s32 timeout_secs,
 			  struct packet *packet, int *in_bytes)
 {
 	struct sockaddr_ll from;
 	memset(&from, 0, sizeof(from));
 	socklen_t from_len = sizeof(from);
 
+	/* Change the socket to timeout after a certain period.
+	 * We set the timeout to be the maximum of the expected_usecs
+	 * and expected_usecs_end computed in verify_time so we wait long
+	 * enough regardless of the packet time type.
+	 */
+
+	struct timeval sock_timeout = {.tv_sec = timeout_secs, .tv_usec = 0};
+
+	if (timeout_secs == TIMEOUT_NONE)
+		sock_timeout.tv_sec = 0;
+
+	setsockopt(psock->packet_fd, SOL_SOCKET, SO_RCVTIMEO,
+	   &sock_timeout, sizeof(sock_timeout));
+
 	/* Read the packet out of our kernel packet socket buffer. */
 	*in_bytes = recvfrom(psock->packet_fd,
 			     packet->buffer, packet->buffer_bytes, 0,
 			     (struct sockaddr *)&from, &from_len);
+	/* Set the socket back to its blocking state. */
+	sock_timeout.tv_sec = 0;
+	setsockopt(psock->packet_fd, SOL_SOCKET, SO_RCVTIMEO,
+		   &sock_timeout, sizeof(sock_timeout));
+	/* Return an error if we timed out */
+	if (*in_bytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		return STATUS_TIMEOUT;
+
 	assert(*in_bytes <= packet->buffer_bytes);
 	if (*in_bytes < 0) {
 		if (errno == EINTR) {

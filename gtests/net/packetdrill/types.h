@@ -68,6 +68,7 @@ enum bool_t {
 };
 
 #define ARRAY_SIZE(array_name)  (sizeof(array_name) / sizeof(array_name[0]))
+#define TIMEOUT_NONE -1
 
 /* Most functions in this codebase return one of these two values to let the
  * caller know whether there was a problem.
@@ -76,6 +77,7 @@ enum status_t {
 	STATUS_OK  = 0,
 	STATUS_ERR = -1,
 	STATUS_WARN = -2,	/* a non-fatal error or warning */
+	STATUS_TIMEOUT = -3	/* timeout sniffing outbound packet */
 };
 
 /* The directions in which a packet may flow. */
@@ -122,6 +124,9 @@ struct ip_info {
 
 /* Flavors of IP versions we support. */
 enum ip_version_t {
+	/*IP version is uninitialized, unknown, or not known yet: */
+	IP_VERSION_UNKNOWN	= -1,
+
 	/* Native IPv4, with AF_INET sockets and IPv4 addresses. */
 	IP_VERSION_4		= 0,
 

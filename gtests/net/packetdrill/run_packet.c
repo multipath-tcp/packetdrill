@@ -24,6 +24,7 @@
 
 #include "run_packet.h"
 
+#include "types.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stddef.h>
@@ -319,6 +320,75 @@ static struct socket *handle_connect_for_script_packet(
 	return socket;
 }
 
+static struct socket *create_socket_for_nontcp_script_packet(
+	struct state *state, const struct packet *packet,
+	enum direction_t direction)
+{
+	struct config *config = state->config;
+	struct socket *socket = NULL;
+	struct tuple tuple;
+
+	DEBUGP("create_socket_for_nontcp_script_packet: direction: %u "
+	       "socket_under_test: %p is_wire_server: %d\n",
+	       direction, state->socket_under_test, config->is_wire_server);
+	/* On wire servers we don't see the system calls, so we won't have any
+	 * socket_under_test yet when we see the first packet for a socket.
+	 */
+	if (!(state->socket_under_test == NULL &&
+	      config->is_wire_server))
+		return NULL;
+
+	/* On a wire server and we have no socket info yet. Create a socket for
+	 * this packet. Any further packets in the test script are mapped here.
+	 */
+	DEBUGP("create_socket_for_nontcp_script_packet: creating socket\n");
+	socket = socket_new(state);
+	state->socket_under_test = socket;
+	/* Set state so that find_connect_for_live_packet() will know that
+	 * outbound packets can match this socket.
+	 */
+	socket->state = SOCKET_ACTIVE_CONNECTING;
+	socket->address_family = packet_address_family(packet);
+
+	/* If this is an ICMP packet with an echoed IP/transport header inside,
+	 * then look at the layer 4 protocol indicated in the echoed IP
+	 * header.
+	 */
+	if (((packet->icmpv4 != NULL) || (packet->icmpv6 != NULL)) &&
+	    packet->echoed_header)
+		socket->protocol = packet_echoed_ip_protocol(packet);
+	else
+		socket->protocol = packet_ip_protocol(packet);
+
+	get_packet_tuple(packet, &tuple);
+
+	socket->fd.live_fd	 = -1;
+	socket->fd.script_fd	 = -1;
+
+	/* Fill in the new info about this connection. */
+	if (direction == DIRECTION_OUTBOUND) {
+		DEBUGP("setting fields for DIRECTION_OUTBOUND\n");
+		socket->script.remote		= tuple.dst;
+		socket->script.local		= tuple.src;
+
+		socket->live.remote.ip   = config->live_remote_ip;
+		socket->live.remote.port = htons(config->live_connect_port);
+	} else if (direction == DIRECTION_INBOUND) {
+		DEBUGP("setting fields for DIRECTION_INBOUND\n");
+		socket->script.remote		= tuple.src;
+		socket->script.local		= tuple.dst;
+
+		u16 remote_port = next_ephemeral_port(state);
+		socket->live.remote.ip		= config->live_remote_ip;
+		socket->live.remote.port	= htons(remote_port);
+		socket->live.local.ip		= config->live_local_ip;
+		socket->live.local.port		= htons(config->live_bind_port);
+	} else {
+		assert(!"bad direction");  /* internal bug */
+	}
+	return socket;
+}
+
 /* Look for a connecting socket that would emit this outgoing live packet. */
 static struct socket *find_connect_for_live_packet(
 	struct state *state, struct packet *packet,
@@ -332,19 +402,31 @@ static struct socket *find_connect_for_live_packet(
 	if (!socket)
 		return NULL;
 
+	DEBUGP("find_connect_for_live_packet:\n");
+	DEBUGP("socket->protocol: %d socket->state %d\n",
+	       socket->protocol, socket->state);
 	bool is_udp_match =
 		(packet->udp &&
 		 (socket->protocol == IPPROTO_UDP) &&
 		 (socket->state == SOCKET_ACTIVE_CONNECTING));
+	DEBUGP("packet->udp: %p is_udp_match: %u\n",
+	       packet->udp, is_udp_match);
 	bool is_icmp_match =
 		(((packet->icmpv4 && socket->protocol == IPPROTO_ICMP) ||
 		  (packet->icmpv6 && socket->protocol == IPPROTO_ICMPV6)) &&
 		 (socket->state == SOCKET_ACTIVE_CONNECTING));
+	DEBUGP("packet->icmpv4: %p packet->icmpv6: %p is_icmp_match: %u\n",
+	       packet->icmpv4, packet->icmpv6, is_icmp_match);
 	bool is_tcp_match =
 		(packet->tcp && packet->tcp->syn && !packet->tcp->ack &&
 		 (socket->protocol == IPPROTO_TCP ||
 		  socket->protocol == IPPROTO_MPTCP) &&
 		 (socket->state == SOCKET_ACTIVE_SYN_SENT));
+	DEBUGP("packet->tcp: %p syn: %u ack: %u is_tcp_match: %u\n",
+	       packet->tcp,
+	       packet->tcp ? packet->tcp->syn : 0,
+	       packet->tcp ? packet->tcp->ack : 0,
+	       is_tcp_match);
 	if (!is_udp_match && !is_tcp_match && !is_icmp_match)
 		return NULL;
 
@@ -661,7 +743,7 @@ static int map_inbound_packet(
 			asprintf(error,
 				 "unable to infer live TS ecr for "
 				 "script TS ecr %u;  "
-				 "no matching or preceding outound TS val",
+				 "no matching or preceding outbound TS val",
 				 packet_tcp_ts_ecr(live_packet));
 			return STATUS_ERR;
 		}
@@ -1562,18 +1644,31 @@ static int verify_outbound_live_ipv6_flowlabel(
 }
 
 static int verify_outbound_tcp_option(
-	struct config *config,
+	struct state *state,
 	struct packet *actual_packet,
 	struct packet *script_packet,
 	struct tcp_option *actual_option,
 	struct tcp_option *script_option,
 	char **error)
 {
+	struct config *config = state->config;
 	u32 script_ts_val, actual_ts_val;
 	int ts_val_tick_usecs;
 	long tolerance_usecs;
+	double dynamic_tolerance;
+	s64 delta;
 
 	tolerance_usecs = config->tolerance_usecs;
+	/* Note that for TCP TS, we do not want to compute the tolerance based
+	 * on last event (as we do in verify_time())
+	 * last event might have happened few ms in the past.
+	 * What matters here is the cumulative time (from the beginning of the test)
+	 */
+	delta = state->event->time_usecs - state->script_start_time_usecs;
+
+	dynamic_tolerance = (config->tolerance_percent / 100.0) * delta;
+	if (dynamic_tolerance > tolerance_usecs)
+		tolerance_usecs = dynamic_tolerance;
 
 	switch (actual_option->kind) {
 	case TCPOPT_EOL:
@@ -1625,7 +1720,7 @@ static int verify_outbound_tcp_option(
 
 /* Verify that the TCP option values matched expected values. */
 static int verify_outbound_live_tcp_options(
-	struct config *config,
+	struct state *state,
 	struct packet *actual_packet,
 	struct packet *script_packet, char **error)
 {
@@ -1648,9 +1743,9 @@ static int verify_outbound_live_tcp_options(
 			return STATUS_ERR;
 		}
 
-		if (verify_outbound_tcp_option(config, actual_packet,
-					script_packet, a_opt, s_opt,
-					error) != STATUS_OK) {
+		if (verify_outbound_tcp_option(state, actual_packet,
+					       script_packet, a_opt, s_opt,
+					       error) != STATUS_OK) {
 			return STATUS_ERR;
 		}
 
@@ -1731,7 +1826,7 @@ static int verify_outbound_live_packet(
 	if (script_packet->tcp) {
 		/* Verify TCP options matched expected values. */
 		if (verify_outbound_live_tcp_options(
-			    state->config, actual_packet, script_packet,
+			    state, actual_packet, script_packet,
 			    error)) {
 			non_fatal = true;
 			goto out;
@@ -1753,6 +1848,7 @@ static int verify_outbound_live_packet(
 	DEBUGP("packet time_usecs: %lld\n", live_packet->time_usecs);
 	if (verify_time(state, time_type, script_usecs,
 				script_usecs_end, live_packet->time_usecs,
+				last_event_time_usecs(state),
 				"outbound packet", error)) {
 		non_fatal = true;
 		goto out;
@@ -1813,28 +1909,89 @@ static int verify_packet_fragments(
 	return STATUS_OK;
 }
 
+static void dump_one_sniffed_packet(struct state *state,
+				    struct packet *sniffed_packet,
+				    int packet_index,
+				    char **error)
+{
+	s64 actual_usecs = live_time_to_script_time_usecs(
+		state, sniffed_packet->time_usecs);
+	char *packet_desc;
+
+	asprintf(&packet_desc, "actual #%d", packet_index);
+	add_packet_dump(error, packet_desc, sniffed_packet, actual_usecs,
+			DUMP_SHORT);
+	free(packet_desc);
+}
+
+/* Write a human-readable message for cases where a sequence of sniffed packets
+ * does not match an expected TSO/GSO jumbogram.
+ */
+static void dump_packet_fragment_mismatch(
+	struct state *state,
+	struct packet_list *sniffed_packets_start,
+	struct packet *sniffed_packet_latest,
+	struct packet *script_packet,
+	char **error)
+{
+	struct packet_list *sniffed_iter = NULL;
+	int packet_index = 0;
+
+	add_packet_dump(error, "   script", script_packet,
+			state->event->time_usecs, DUMP_SHORT);
+
+	for (sniffed_iter = sniffed_packets_start; sniffed_iter != NULL;
+	     sniffed_iter = sniffed_iter->next) {
+		dump_one_sniffed_packet(state, sniffed_iter->packet,
+					packet_index, error);
+		packet_index++;
+	}
+	dump_one_sniffed_packet(state, sniffed_packet_latest,
+				packet_index, error);
+}
+
 /* Sniff the next outbound live packet and return it. */
 static int sniff_outbound_live_packet(
 	struct state *state, struct socket *expected_socket,
 	struct packet **packet, char **error)
 {
+	s64 expected_usecs =  state->event->time_usecs - state->script_last_time_usecs;
+	s64 expected_usecs_end =  state->event->time_usecs_end - state->script_last_time_usecs;
+	/* The number of seconds after expected arrival that we timeout. */
+	const u32 tolerance_secs = 2;
+	/* How long we wait to receive a packet. */
+	s32 timeout_secs = usecs_to_secs(max(expected_usecs,
+					 expected_usecs_end)) + tolerance_secs;
+
+	/* Disable timeout if packet can take any amount of time */
+	timeout_secs = (state->event->time_type == ANY_TIME) ? TIMEOUT_NONE : timeout_secs;
+
 	DEBUGP("sniff_outbound_live_packet\n");
 	struct socket *socket = NULL;
 	enum direction_t direction = DIRECTION_INVALID;
 	assert(*packet == NULL);
 	while (1) {
-		if (netdev_receive(state->netdev, packet, error))
+		int status = netdev_receive(state->netdev, timeout_secs,
+					    packet, error);
+
+		DEBUGP("sniff_outbound_live_packet: received packet\n");
+		if (status == STATUS_TIMEOUT)
+			return STATUS_TIMEOUT;
+		if (status)
 			return STATUS_ERR;
 		/* See if the packet matches an existing, known socket. */
+		DEBUGP("sniff_outbound_live_packet: checking known sockets\n");
 		socket = find_socket_for_live_packet(state, *packet,
 						     &direction);
 		if ((socket != NULL) && (direction == DIRECTION_OUTBOUND))
 			break;
 		/* See if the packet matches a recent connect() call. */
+		DEBUGP("sniff_outbound_live_packet: checking new sockets\n");
 		socket = find_connect_for_live_packet(state, *packet,
 						      &direction);
 		if ((socket != NULL) && (direction == DIRECTION_OUTBOUND))
 			break;
+		DEBUGP("sniff_outbound_live_packet: freeing packet\n");
 		packet_free(*packet);
 		*packet = NULL;
 	}
@@ -1842,6 +1999,7 @@ static int sniff_outbound_live_packet(
 	assert(*packet != NULL);
 	assert(socket != NULL);
 	assert(direction == DIRECTION_OUTBOUND);
+	DEBUGP("sniff_outbound_live_packet: sniffed packet and found socket\n");
 
 	if (socket != expected_socket) {
 		asprintf(error, "packet is not for expected socket");
@@ -1936,6 +2094,9 @@ static int find_or_create_socket_for_script_packet(
 		/* Is this a packet starting a new mptcp subflow? */
 		*socket = handle_mp_join_for_script_packet(state,
 							   packet, direction);
+	} else {
+		*socket = create_socket_for_nontcp_script_packet(state, packet,
+								 direction);
 		if (*socket != NULL)
 			return STATUS_OK;
 	}
@@ -2083,6 +2244,12 @@ static int do_outbound_script_packet(
 						sniffed_payload_len,
 						expected_payload_len,
 						error)) {
+					dump_packet_fragment_mismatch(
+						state,
+						sniffed_packets_start,
+						sniffed->packet,
+						packet,
+						error);
 					packet_list_free(sniffed);
 					goto out;
 				}

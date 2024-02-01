@@ -199,6 +199,26 @@ static int check_type(const struct expression *expression,
 }
 
 /* Sets the value from the expression argument, checking that it is a
+ * valid s8 or u8, and matches the expected type. Returns STATUS_OK on
+ * success; on failure returns STATUS_ERR and sets error message.
+ */
+static int get_s8(struct expression *expression,
+		  s8 *value, char **error)
+{
+	if (check_type(expression, EXPR_INTEGER, error))
+		return STATUS_ERR;
+	if ((expression->value.num > UCHAR_MAX) ||
+	    (expression->value.num < CHAR_MIN)) {
+		asprintf(error,
+			 "Value out of range for 8-bit integer: %lld",
+			 expression->value.num);
+		return STATUS_ERR;
+	}
+	*value = expression->value.num;
+	return STATUS_OK;
+}
+
+/* Sets the value from the expression argument, checking that it is a
  * valid s32 or u32, and matches the expected type. Returns STATUS_OK on
  * success; on failure returns STATUS_ERR and sets error message.
  */
@@ -441,8 +461,10 @@ static void get_nla_value(const struct expression *expr, void *out_buf,
  * expressions of the form: key = val.
  */
 static int nla_expr_list_to_nla(struct expression_list *list,
-				void *dst, int *len,
-				struct nla_type_info *nla_info, char **error)
+				void *dst, int dst_len, int *len,
+				struct nla_type_info *nla_info,
+				int nla_info_len,
+				char **error)
 {
 	struct expression *element, *key, *value;
 	void *start = dst;
@@ -470,6 +492,10 @@ static int nla_expr_list_to_nla(struct expression_list *list,
 		}
 
 		key_num = key->value.num;
+		if (key_num < 0 || key_num >= nla_info_len) {
+			asprintf(error, "bad NLA type %lld\n", key_num);
+			return STATUS_ERR;
+		}
 		val_num = value->value.num;
 		num_bytes = nla_info[key_num].length;
 		if (num_bytes == sizeof(u8) &&
@@ -493,11 +519,11 @@ static int new_extended_err(const struct sock_extended_err_expr *expr,
 {
 	if (get_s32(expr->ee_errno, (s32 *)&ee->ee_errno, error))
 		return STATUS_ERR;
-	if (get_s32(expr->ee_origin, (s32 *)&ee->ee_origin, error))
+	if (get_s8(expr->ee_origin, (s8 *)&ee->ee_origin, error))
 		return STATUS_ERR;
-	if (get_s32(expr->ee_type, (s32 *)&ee->ee_type, error))
+	if (get_s8(expr->ee_type, (s8 *)&ee->ee_type, error))
 		return STATUS_ERR;
-	if (get_s32(expr->ee_code, (s32 *)&ee->ee_code, error))
+	if (get_s8(expr->ee_code, (s8 *)&ee->ee_code, error))
 		return STATUS_ERR;
 	if (get_s32(expr->ee_info, (s32 *)&ee->ee_info, error))
 		return STATUS_ERR;
@@ -588,8 +614,12 @@ static int cmsg_new(const struct expression *expr, struct msghdr *msg,
 
 		case EXPR_LIST:
 			stats_expr = cmsg_expr->cmsg_data->value.list;
-			if (nla_expr_list_to_nla(stats_expr, data, &len,
-						 tcp_nla, error))
+			if (nla_expr_list_to_nla(stats_expr, data,
+						 (MSGHDR_MAX_CONTROLLEN - sum
+						  - sizeof(struct cmsghdr)),
+						 &len,
+						 tcp_nla, ARRAY_SIZE(tcp_nla),
+						 error))
 				goto error_out;
 			break;
 
@@ -1474,8 +1504,10 @@ static int run_syscall_accept(struct state *state,
 			char remote_string[ADDR_STR_LEN];
 			DEBUGP("socket state=%d script addr: %s:%d\n",
 			       socket->state,
-			       ip_to_string(&socket->script.remote.ip,
-					    remote_string),
+			       (socket->script.remote.ip.address_family ?
+				ip_to_string(&socket->script.remote.ip,
+					     remote_string) :
+				"UNKNOWN-IP"),
 			       socket->script.remote.port);
 		}
 
@@ -1636,18 +1668,20 @@ static int run_syscall_pipe(struct state *state, int *pfd_script, int *pfd_live,
 static int syscall_socket(struct state *state, struct syscall_spec *syscall,
 			  struct expression_list *args, char **error)
 {
-	int domain, type, protocol, live_fd, script_fd, result;
+	int domain = state->config->socket_domain;
+	int type, protocol, live_fd, script_fd, result;
 
 	if (check_arg_count(args, 3, error))
 		return STATUS_ERR;
+
 	if (ellipsis_arg(args, 0, error))
-		return STATUS_ERR;
+		if (s32_arg(args, 0, &domain, error))
+			return STATUS_ERR;
+
 	if (s32_arg(args, 1, &type, error))
 		return STATUS_ERR;
 	if (s32_arg(args, 2, &protocol, error))
 		return STATUS_ERR;
-
-	domain = state->config->socket_domain;
 
 	begin_syscall(state, syscall);
 
@@ -3523,12 +3557,18 @@ static void *system_call_thread(void *arg)
 			 */
 			invoke_system_call(state, event, syscall);
 
-			/* Check end time for the blocking system call. */
+			/* Check end time for the blocking system call.
+			 * For a blocking system call we compute the
+			 * dynamic tolerance based on the start and end
+			 * time. The last event here is unpredictable
+			 * and irrelevant.
+			 */
 			assert(state->syscalls->live_end_usecs >= 0);
 			if (verify_time(state,
 						event->time_type,
 						syscall->end_usecs, 0,
 						state->syscalls->live_end_usecs,
+						event->time_usecs,
 						"system call return", &error)) {
 				die("%s:%d: %s\n",
 				    state->config->script_path,
