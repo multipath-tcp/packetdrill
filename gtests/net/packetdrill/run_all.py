@@ -46,8 +46,6 @@ class TestSet(object):
     cmd.extend(self.default_args.split())
     if extra_args is not None:
       cmd.extend(extra_args.split())
-    if self.args['verbose'] > 1:
-      cmd.append('-' + 'v' * (self.args['verbose'] - 1))
     cmd.append(basename)
 
     return (cmd, execdir, path, variant)
@@ -261,8 +259,7 @@ def ParseArgs():
                     help="max number of tests running in parallel")
   args.add_argument('-s', '--subdirs', action='store_true')
   args.add_argument('-S', '--serialized', action='store_true')
-  args.add_argument('-v', '--verbose', action='count', default=0,
-                    help="can be repeated to run packetdrill with -v")
+  args.add_argument('-v', '--verbose', action='store_true')
   return vars(args.parse_args())
 
 
