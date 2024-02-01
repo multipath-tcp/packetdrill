@@ -78,11 +78,25 @@ extern struct ip_address ipv4_parse(const char *ip_string);
  */
 extern struct ip_address ipv6_parse(const char *ip_string);
 
+/* Attempt to parse a human-readable IPv4/IPv6 address and return it. Return
+ * STATUS_OK on success, or STATUS_ERR on failure (meaning the input string was
+ * not actually a valid IPv4 or IPv6 address).
+ */
+extern int ip_parse(const char *ip_string, struct ip_address *ip);
+
 /* Print a human-readable representation of the given IP address in the
  * given buffer, which must be at least ADDR_STR_LEN bytes long.
  * Returns a pointer to the given buffer.
  */
 extern const char *ip_to_string(const struct ip_address *ip, char *buffer);
+
+/* Convert a string containing a human-readable DNS name or IPv/IPv6 address
+ * into an IP address struct. Return STATUS_OK on success. Upon failure (i.e.,
+ * the input host string was not actually a valid DNS name, IPv4 address, or
+ * IPv6 address) returns STATUS_ERR and fills in *error with a malloc-allocated
+ * error message.
+ */
+extern int string_to_ip(const char *host, struct ip_address *ip, char **error);
 
 /* Create an IPv4-mapped IPv6 address. */
 extern struct ip_address ipv6_map_from_ipv4(const struct ip_address ipv4);

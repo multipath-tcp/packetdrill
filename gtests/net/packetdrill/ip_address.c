@@ -26,9 +26,12 @@
 
 #include <ifaddrs.h>
 #include <net/if.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "logging.h"
@@ -126,12 +129,51 @@ struct ip_address ipv6_parse(const char *ip_string)
 	return ipv6;
 }
 
+int ip_parse(const char *ip_string, struct ip_address *ip)
+{
+	ipv6_init(ip);
+	if (inet_pton(AF_INET6, ip_string, &ip->ip.v6) == 1)
+		return STATUS_OK;
+
+	ipv4_init(ip);
+	if (inet_pton(AF_INET, ip_string, &ip->ip.v4) == 1)
+		return STATUS_OK;
+
+	return STATUS_ERR;
+}
+
 const char *ip_to_string(const struct ip_address *ip, char *buffer)
 {
 	if (!inet_ntop(ip->address_family, &ip->ip, buffer, ADDR_STR_LEN))
 		die_perror("inet_ntop");
 
 	return buffer;
+}
+
+extern int string_to_ip(const char *host, struct ip_address *ip, char **error)
+{
+	int status;
+	u16 port = 0;
+	struct addrinfo *results = NULL, *result = NULL;
+
+	status = getaddrinfo(host, NULL, NULL, &results);
+	if (status) {
+		asprintf(error, "getaddrinfo: %s\n", gai_strerror(status));
+		return STATUS_ERR;
+	}
+
+	status = STATUS_ERR;
+	for (result = results; result != NULL; result = result->ai_next) {
+		if (result->ai_family == AF_INET ||
+		    result->ai_family == AF_INET6) {
+			ip_from_sockaddr(result->ai_addr,
+					 result->ai_addrlen, ip, &port);
+			status = STATUS_OK;
+			break;
+		}
+	}
+	freeaddrinfo(results);
+	return status;
 }
 
 struct ip_address ipv6_map_from_ipv4(const struct ip_address ipv4)
