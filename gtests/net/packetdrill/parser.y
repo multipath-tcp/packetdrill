@@ -714,6 +714,9 @@ struct tcp_option *dss_do_dsn_dack( int dack_type, int dack_val,
 			opt = tcp_option_new(TCPOPT_MPTCP, TCPOLEN_DSS_DACK8_DSN8);
 //		opt->data.dss.dack_dsn.dsn.dsn8 = dsn_val;
 //		opt->data.dss.dack_dsn.dack.dack8 = dack_val;
+	}else{
+		semantic_error("DACK & DSN Types are not known");
+		return NULL;
 	}
 
 	struct dack *dack_script = (struct dack*)(&opt->data.dss.dack_dsn);

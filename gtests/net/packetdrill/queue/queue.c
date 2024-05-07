@@ -49,7 +49,7 @@ int queue_rear(queue_t *queue, void **element){
 		*element = queue->elements[queue->r-1];
 	}
 	else{
-		*element = queue->elements[QUEUE_SIZE];
+		*element = queue->elements[QUEUE_SIZE-1];
 	}
 	return STATUS_OK;
 }
@@ -110,7 +110,7 @@ int queue_rear_val(queue_t_val *queue, u64 *element){
 		*element = queue->elements[queue->r-1];
 	}
 	else{
-		*element = queue->elements[QUEUE_SIZE];
+		*element = queue->elements[QUEUE_SIZE-1];
 	}
 	return STATUS_OK;
 }
