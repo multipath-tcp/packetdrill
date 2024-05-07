@@ -715,7 +715,7 @@ static int mp_join_syn(struct packet *packet_to_modify,
 		struct mp_join_info *mp_join_script_info,
 		unsigned direction)
 {
-	struct mp_subflow *subflow;
+	struct mp_subflow *subflow = NULL;
 	if(direction == DIRECTION_INBOUND)
 		subflow = new_subflow_inbound(packet_to_modify);
 	else if(direction == DIRECTION_OUTBOUND){
@@ -1833,13 +1833,13 @@ static struct endpoint *find_next_addr_outbound(struct packet *live_packet, stru
 		endpoint->port = tuple.src.port;
 	}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V4_PORT ||
 		 add_addr_script->length == TCPOLEN_ADD_ADDR_V4_PORT_HMAC){
-		if(add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
+		if((s16)add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
 			endpoint->port = add_addr_live->data.add_addr.ipv4_w_port.port;
 		else
 			endpoint->port = add_addr_script->data.add_addr.ipv4_w_port.port;
 	}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V6_PORT ||
 		 add_addr_script->length == TCPOLEN_ADD_ADDR_V6_PORT_HMAC){
-		if(add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
+		if((s16)add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
 			endpoint->port = add_addr_live->data.add_addr.ipv6_w_port.port;
 		else
 			endpoint->port = add_addr_script->data.add_addr.ipv6_w_port.port;
@@ -1883,14 +1883,14 @@ static struct endpoint *find_next_addr_inbound(struct packet *live_packet, struc
 			htons(subflow->dst_port) : htons(subflow->src_port);
 	}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V4_PORT ||
 		 add_addr_live->length == TCPOLEN_ADD_ADDR_V4_PORT_HMAC){
-		if(add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
+		if((s16)add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
 			endpoint->port = add_addr_script->data.add_addr.flag_E ?
 				htons(subflow->dst_port): htons(subflow->src_port);
 		else
 			endpoint->port = add_addr_script->data.add_addr.ipv4_w_port.port;
 	}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V6_PORT ||
 		 add_addr_live->length == TCPOLEN_ADD_ADDR_V6_PORT_HMAC){
-		if(add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
+		if((s16)add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
 			endpoint->port = add_addr_script->data.add_addr.flag_E ?
 			      htons(subflow->dst_port) : htons(subflow->src_port);
 		else
@@ -1970,7 +1970,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
 			add_addr_live->data.add_addr.ipv4 = endpoint->ip.ip.v4;
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V4_PORT){
 			add_addr_live->data.add_addr.ipv4_w_port.ipv4 = endpoint->ip.ip.v4;
-			if(add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
 				add_addr_live->data.add_addr.ipv4_w_port.port = endpoint->port;
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V4_HMAC){
 			add_addr_live->data.add_addr.ipv4_w_hmac.ipv4 = endpoint->ip.ip.v4;
@@ -1983,7 +1983,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
                                                            0);
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V4_PORT_HMAC){
 			add_addr_live->data.add_addr.ipv4_w_port_hmac.ipv4 = endpoint->ip.ip.v4;
-			if(add_addr_script->data.add_addr.ipv4_w_port_hmac.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv4_w_port_hmac.port == UNDEFINED)
 				add_addr_live->data.add_addr.ipv4_w_port_hmac.port = endpoint->port;
 			if(add_addr_script->data.add_addr.ipv4_w_port_hmac.hmac == UNDEFINED)
 				add_addr_live->data.add_addr.ipv4_w_port_hmac.hmac =
@@ -1996,7 +1996,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
 			add_addr_live->data.add_addr.ipv6 = endpoint->ip.ip.v6;
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V6_PORT){
 			add_addr_script->data.add_addr.ipv6_w_port.ipv6 = endpoint->ip.ip.v6;
-			if(add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
 				add_addr_live->data.add_addr.ipv6_w_port.port = endpoint->port;
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V6_HMAC){
 			add_addr_script->data.add_addr.ipv6_w_hmac.ipv6 = endpoint->ip.ip.v6;
@@ -2009,7 +2009,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
                                                            0);
 		}else if(add_addr_live->length == TCPOLEN_ADD_ADDR_V6_PORT_HMAC){
 			add_addr_script->data.add_addr.ipv6_w_port_hmac.ipv6 = endpoint->ip.ip.v6;
-			if(add_addr_script->data.add_addr.ipv6_w_port_hmac.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv6_w_port_hmac.port == UNDEFINED)
 				add_addr_live->data.add_addr.ipv6_w_port_hmac.port = endpoint->port;
 			if(add_addr_script->data.add_addr.ipv6_w_port_hmac.hmac == UNDEFINED)
 				add_addr_live->data.add_addr.ipv6_w_port_hmac.hmac =
@@ -2032,7 +2032,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
 			add_addr_script->data.add_addr.ipv4 = endpoint->ip.ip.v4;
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V4_PORT){
 			add_addr_script->data.add_addr.ipv4_w_port.ipv4 = endpoint->ip.ip.v4;
-			if(add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
 				add_addr_script->data.add_addr.ipv4_w_port.port = endpoint->port;
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V4_HMAC){
 			add_addr_script->data.add_addr.ipv4_w_hmac.ipv4 = endpoint->ip.ip.v4;
@@ -2045,7 +2045,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
                                                            0);
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V4_PORT_HMAC){
 			add_addr_script->data.add_addr.ipv4_w_port_hmac.ipv4 = endpoint->ip.ip.v4;
-			if(add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv4_w_port.port == UNDEFINED)
 				add_addr_script->data.add_addr.ipv4_w_port.port = endpoint->port;
 			if(add_addr_script->data.add_addr.ipv4_w_port_hmac.hmac == UNDEFINED)
 				add_addr_script->data.add_addr.ipv4_w_port_hmac.hmac =
@@ -2058,7 +2058,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
 			add_addr_script->data.add_addr.ipv6 = endpoint->ip.ip.v6;
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V6_PORT){
 			add_addr_script->data.add_addr.ipv6_w_port.ipv6 = endpoint->ip.ip.v6;
-			if(add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
 				add_addr_script->data.add_addr.ipv6_w_port.port = endpoint->port;
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V6_HMAC){
 			add_addr_script->data.add_addr.ipv6_w_hmac.ipv6 = endpoint->ip.ip.v6;
@@ -2071,7 +2071,7 @@ int mptcp_subtype_add_address(struct packet *packet_to_modify,
                                                            0);
 		}else if(add_addr_script->length == TCPOLEN_ADD_ADDR_V6_PORT_HMAC){
 			add_addr_script->data.add_addr.ipv6_w_port_hmac.ipv6 = endpoint->ip.ip.v6;
-			if(add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
+			if((s16)add_addr_script->data.add_addr.ipv6_w_port.port == UNDEFINED)
 				add_addr_script->data.add_addr.ipv6_w_port.port = endpoint->port;
 			if(add_addr_script->data.add_addr.ipv6_w_port_hmac.hmac == UNDEFINED)
 				add_addr_script->data.add_addr.ipv6_w_port_hmac.hmac =
