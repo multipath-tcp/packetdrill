@@ -32,6 +32,6 @@
 +0.0  setsockopt(7, SOL_IP, IP_TOS, [7], 4) = 0
 +0.1  close(7) = 0
 
-+0.0  >  [tos 0x04]  addr[caddr0] > addr[saddr0]   .  3:3(0)  ack 1  win 256    <nop, nop,         TS val 4074418292 ecr 4074418293, dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin, nop, nop>
-+0.0  >  [tos 0x04]                                .  1:1(0)  ack 1  win 256    <nop, nop,         TS val 4074418292 ecr 4074418293, dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin, nop, nop>
++0.0  >  [tos 0x04]  addr[caddr0] > addr[saddr0]   .  3:3(0)  ack 1             <nop, nop,         TS val 4074418292 ecr 4074418293, dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin, nop, nop>
++0.0  >  [tos 0x04]                                .  1:1(0)  ack 1             <nop, nop,         TS val 4074418292 ecr 4074418293, dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin, nop, nop>
 
