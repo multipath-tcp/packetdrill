@@ -12,13 +12,13 @@ sysctl -q net.mptcp.close_timeout=1`
 +0     listen(3, 1) = 0
 +0.0     <  addr[caddr0] > addr[saddr0]  S   0:0(0)                     win 65535  <mss 1460, nop, wscale 7,  mpcapable v1 flags[flag_h] nokey>
 +0.0     >                               S.  0:0(0)           ack 1                <mss 1460, nop, wscale 8,  mpcapable v1 flags[flag_h] key[skey]>
-+0.0     <                                .  1:1(0)           ack 1     win 256                              <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.1     <                                .  1:1(0)           ack 1     win 256                              <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
 +0     accept(3, ..., ...) = 4
 
 // the 4th ack, making the mptcp socket fully established, will trigger the add_addr
 +0.0     <                                .  1:1(0)           ack 1     win 256                                         <dss dack4=1 nocs>
 +0.0     >                                .  1:1(0)           ack 1                <add_address address_id=1 addr[saddr1] hmac=auto>
-+0.0     <                                .  1:1(0)           ack 1     win 256    <add_address address_id=1 addr[saddr1] addr_echo,  dss dack4=1 nocs>
++0.1     <                                .  1:1(0)           ack 1     win 256    <add_address address_id=1 addr[saddr1] addr_echo,  dss dack4=1 nocs>
 
 +0.0     <                               P.  1:1001(1000)     ack 1     win 450    <nop, nop,                 dss dack8=1    dsn8=1    ssn=1    dll=1000 nocs>
 +0.0     >                                .  1:1(0)           ack 1001                                       <dss dack8=1001 nocs>
@@ -26,7 +26,7 @@ sysctl -q net.mptcp.close_timeout=1`
 // create subflow
 +0.0    <  addr[caddr1] > addr[saddr0]   S   0:0(0)                     win 65535  <mss 1460, sackOK, TS val 448955294  ecr 0,          nop, wscale 8, mp_join_syn     backup=1 address_id=1 token=sha256_32(skey)>
 +0.0    >                                S.  0:0(0)           ack 1                <mss 1460, sackOK, TS val 448955294  ecr 448955294,  nop, wscale 8, mp_join_syn_ack backup=1 address_id=1 sender_hmac=auto>
-+0.0    <                                 .  1:1(0)           ack 1     win 256    <nop, nop,         TS val 448955294  ecr 448955294,                 mp_join_ack                           sender_hmac=auto>
++0.1    <                                 .  1:1(0)           ack 1     win 256    <nop, nop,         TS val 448955294  ecr 448955294,                 mp_join_ack                           sender_hmac=auto>
 
 // reset both subflows
 +0.0    <  addr[caddr0] > addr[saddr0]   R   1001:1001(0)     ack 1     win 0

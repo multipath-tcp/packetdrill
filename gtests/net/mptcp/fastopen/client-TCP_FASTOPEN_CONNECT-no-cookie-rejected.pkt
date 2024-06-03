@@ -9,7 +9,7 @@
 +0.0    connect(3, ..., ...) = 0
 +0.0    write(3, ..., 500) = 500
 
-+0.01     >  S   0:500(500)               <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0      >  S   0:500(500)               <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
 +0.01     <  R   0:0(0)      ack 0  win 0
 
 +0.01   write(3, ..., 500) = -1 (Resource temporarily unavailable)
