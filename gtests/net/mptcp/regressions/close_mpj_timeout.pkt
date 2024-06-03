@@ -32,4 +32,4 @@ sysctl -q net.mptcp.close_timeout=1`
 +0.0    <  addr[caddr0] > addr[saddr0]   R   1001:1001(0)     ack 1     win 0
 +0.0    <  addr[caddr1] > addr[saddr0]   R   1:1(0)           ack 1     win 0
 
-+1.1   write(4, ..., 1) = -1 EPIPE (Broken pipe)
++1.5   write(4, ..., 1) = -1 EPIPE (Broken pipe)
