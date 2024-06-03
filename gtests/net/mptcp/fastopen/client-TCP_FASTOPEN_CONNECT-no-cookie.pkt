@@ -11,13 +11,13 @@
 +0.0    connect(3, ..., ...) = 0
 +0.0    write(3, ..., 500) = 500
 
-+0.01     >  S   0:500(500)                           <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0      >  S   0:500(500)                           <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
 +0.01     <  S.  0:0(0)          ack 501   win 65535  <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
-+0.01     >   .  501:501(0)      ack 1                <nop, nop,         TS val 100 ecr 700,                mpcapable v1 flags[flag_h] key[ckey, skey]>
++0.0      >   .  501:501(0)      ack 1                <nop, nop,         TS val 100 ecr 700,                mpcapable v1 flags[flag_h] key[ckey, skey]>
 
 // check the rest is OK
 +0.1    write(3, ..., 1000) = 1000
-+0.01     >  P.  501:1501(1000)  ack 1                <nop, nop, TS val 100 ecr 700, mpcapable v1 flags[flag_h] key[ckey, skey] mpcdatalen 1000, nop, nop>
++0.0      >  P.  501:1501(1000)  ack 1                <nop, nop, TS val 100 ecr 700, mpcapable v1 flags[flag_h] key[ckey, skey] mpcdatalen 1000, nop, nop>
 +0.01     <   .  1:1(0)          ack 1501  win 225                                  <dss dack8=1001 nocs>
 
 // Similar to TCP?

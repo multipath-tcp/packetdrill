@@ -13,13 +13,13 @@
 +0.0    listen(3, 1) = 0
 
 +0.0      <  S   0:0(0)                win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO,            nop, nop, mpcapable v1 flags[flag_h] nokey>
-+0.01     >  S.  0:0(0)      ack 1                <mss 1460, nop, nop, sackOK,           nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] key[skey]>
++0.0      >  S.  0:0(0)      ack 1                <mss 1460, nop, nop, sackOK,           nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] key[skey]>
 +0.01     <   .  1:1(0)      ack 1     win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey=2, skey]>
 
 +0.2    accept(3, ..., ...) = 4
 +0.2    close(4) = 0
 +0.0      >   .  1:1(0)      ack 1                <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
-+0.0      <   .  1:1(0)      ack 1     win 450    <dss dack4=2 dsn4=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.01     <   .  1:1(0)      ack 1     win 450    <dss dack4=2 dsn4=1 ssn=0 dll=1 nocs fin, nop, nop>
 +0.0      >   .  1:1(0)      ack 1                <dss dack4=2 nocs>
 +0.0      >  F.  1:1(0)      ack 1                <dss dack4=2 nocs>
 +0.0      <   .  1:1(0)      ack 2     win 450    <dss dack4=2 nocs>
