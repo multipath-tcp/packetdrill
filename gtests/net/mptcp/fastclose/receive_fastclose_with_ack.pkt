@@ -9,7 +9,7 @@
 +0     listen(3, 1) = 0
 +0.0     <  S   0:0(0)                     win 65535  <mss 1460, nop, wscale 7, mpcapable v1 flags[flag_h] nokey>
 +0.0     >  S.  0:0(0)           ack 1                <mss 1460, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
-+0.0     <   .  1:1(0)           ack 1     win 256                             <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.1     <   .  1:1(0)           ack 1     win 256                             <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
 +0     accept(3, ..., ...) = 4
 
 +0.0     <  P.  1:1001(1000)     ack 1     win 450    <nop, nop, dss dack8=1    dsn8=1    ssn=1    dll=1000 nocs>
