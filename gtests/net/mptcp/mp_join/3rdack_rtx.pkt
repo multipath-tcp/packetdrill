@@ -31,10 +31,10 @@
 +0.0    >               > addr[saddr1]   .  1:1(0)      ack 1             <nop, nop,         TS val 448955294 ecr 448955294,                mp_join_ack                  sender_hmac=auto>
 
 // rtx timeout
-+0.4    >                                .  1:1(0)      ack 1             <nop, nop,         TS val 448955294 ecr 448955294,                mp_join_ack                  sender_hmac=auto>
++0.4~+0.6 >                              .  1:1(0)      ack 1             <nop, nop,         TS val 448955294 ecr 448955294,                mp_join_ack                  sender_hmac=auto>
 
 // another rtx timeout
-+0.4    >                                .  1:1(0)      ack 1             <nop, nop,         TS val 448955294 ecr 448955294,                mp_join_ack                  sender_hmac=auto>
++0.4~+0.6 >                              .  1:1(0)      ack 1             <nop, nop,         TS val 448955294 ecr 448955294,                mp_join_ack                  sender_hmac=auto>
 
 // 4th ack
 +0.0    <                                .  1:1(0)      ack 1  win 256    <nop, nop,         TS val 448955294 ecr 448955294, dss dack8=3   nocs>
