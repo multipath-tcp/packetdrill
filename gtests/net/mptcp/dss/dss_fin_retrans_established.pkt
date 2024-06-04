@@ -17,9 +17,9 @@
 +0       >   .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 
 // wait for retransmissions
-+0.200   >   .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
-+0.200   >   .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
-+0.400   >   .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.2~+0.3 >  .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.2~+0.3 >  .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.4~+0.5 >  .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 
 // ACK the data_fin
 +0       <   .  2:2(0)  ack 1  win 450    <dss dack4=2 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
