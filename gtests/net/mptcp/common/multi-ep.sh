@@ -6,11 +6,12 @@
 
 usage() { echo "$0 [-e <endpoints>] [-m <signal|subflow>] [-b]" 1>&2; exit 1; }
 
-# create_endpoints <number of endpoints> <host number> <network number> <prefix length> <is_signal> <is_backup>
+# create_endpoints <number of endpoints> <host number> <network number> <prefix length> <is_signal> <is_subflow> <is_backup>
 create_endpoints() {
-    local host= flags= ep=1 max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} bck=${6:-0}
+    local host= flags= ep=1 max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} sub=${6:-0} bck=${7:-0}
 
-    [ $sig -eq 1 ] && flags=signal || flags=subflow
+    [ $sig -eq 1 ] && flags=signal
+    [ $sub -eq 1 ] && flags=${flags:+$flags }subflow
     [ $bck -eq 1 ] && flags=${flags:+$flags }backup
 
     ip mptcp endpoint flush
@@ -28,7 +29,9 @@ create_endpoints() {
 
 epmax=1
 signal=1
+subflow=0
 backup=0
+mset=0
 
 while getopts ":be:m:" o; do
     case "${o}" in
@@ -37,9 +40,14 @@ while getopts ":be:m:" o; do
         [ $epmax -ge 0 -a $epmax -le 8 ] || usage
         ;;
     m)
+        if [ $mset -eq 0 ]; then
+            mset=1
+            signal=0
+        fi
+
         case ${OPTARG} in
         signal) signal=1 ;;
-        subflow) signal=0 ;;
+        subflow) subflow=1 ;;
         *) printf "invalid param $OPTARG\n" 1>&2 ; usage
         esac
         ;;
@@ -90,4 +98,4 @@ EOF
 fi
 
 ip mptcp limits set add_addr_accepted 8 subflows 8
-create_endpoints $epmax ${BASH_REMATCH[2]} ${BASH_REMATCH[1]} $network $signal $backup
+create_endpoints $epmax ${BASH_REMATCH[2]} ${BASH_REMATCH[1]} $network $signal $subflow $backup
