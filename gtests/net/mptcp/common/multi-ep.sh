@@ -65,7 +65,7 @@ shift $((OPTIND-1))
 
 if [[ $OPT_IP_VERSION = "ipv6" ]]; then
     if [[ $OPT_LOCAL_IP =~ (.*):([0-9a-f]+) ]]; then
-        network=64
+        network=48
     else
         echo "Failed to parse ipv6 address: $OPT_LOCAL_IP" 1>&2
         exit 1
