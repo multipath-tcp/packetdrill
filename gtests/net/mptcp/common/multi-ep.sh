@@ -8,7 +8,7 @@ usage() { echo "$0 [-e <endpoints>] [-m <signal|subflow>] [-b]" 1>&2; exit 1; }
 
 # create_endpoints <number of endpoints> <host number> <network number> <prefix length> <is_signal> <is_subflow> <is_backup>
 create_endpoints() {
-    local host= flags= ep=1 max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} sub=${6:-0} bck=${7:-0}
+    local host= flags= ep=1 nodad= max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} sub=${6:-0} bck=${7:-0}
 
     [ $sig -eq 1 ] && flags=signal
     [ $sub -eq 1 ] && flags=${flags:+$flags }subflow
@@ -18,10 +18,12 @@ create_endpoints() {
     while [ ${ep} -le ${max} ]; do
         if [ "$OPT_IP_VERSION" = "ipv6" ]; then
             host=$(printf "%s:%x" "${nn}" "$(($(printf '%d' 0x${hn})+ep))")
+            nodad="nodad"
         else
             host=${nn}$((hn+ep))
         fi
-        ip addr add $host/$pl dev $OPT_LOCAL_DEV
+
+        ip addr add $host/$pl dev $OPT_LOCAL_DEV $nodad
         ip mptcp endpoint add $host $flags
         ep=$((ep+1))
     done
