@@ -13,7 +13,7 @@
 +0     accept(3, ..., ...) = 4
 
 // the client shutdown its side
-+0.0     <  P.  1:1(0)  ack 1  win 450    <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.0     <   .  1:1(0)  ack 1  win 450    <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 +0.0     >   .  1:1(0)  ack 1             <dss dack4=2 nocs>
 +0.0     <  F.  1:1(0)  ack 1  win 450    <dss dack4=1 nocs>
 +0.0     >   .  1:1(0)  ack 2             <dss dack4=2 nocs>
