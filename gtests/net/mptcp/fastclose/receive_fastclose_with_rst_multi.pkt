@@ -17,7 +17,7 @@
 +0.2    <                               P.  1:1001(1000)  ack 1     win 450    <nop, nop,                           dss dack4=1    dsn8=1    ssn=1 dll=1000 nocs>
 +0.0    >                                .  1:1(0)        ack 1001                                                 <dss dack8=1001 nocs>
 
-+0.2    <                               P.  1:1(0)        ack 1     win 450                             <mpcapable v1 flags[flag_h] key[skey, ckey]>
++0.2    <                                .  1:1(0)        ack 1     win 450                             <mpcapable v1 flags[flag_h] key[skey, ckey]>
 +0.0    >                                .  1:1(0)        ack 1001                                                 <dss dack8=1001 nocs>
 
 
