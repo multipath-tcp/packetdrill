@@ -24,9 +24,9 @@ sysctl -q net.mptcp.close_timeout=1`
 +0.0     >                                .  1:1(0)           ack 1001                                       <dss dack8=1001 nocs>
 
 // create subflow
-+0.0    <  addr[caddr1] > addr[saddr0]   S   0:0(0)                     win 65535  <mss 1460, sackOK, TS val 448955294  ecr 0,          nop, wscale 8, mp_join_syn     backup=1 address_id=1 token=sha256_32(skey)>
-+0.0    >                                S.  0:0(0)           ack 1                <mss 1460, sackOK, TS val 448955294  ecr 448955294,  nop, wscale 8, mp_join_syn_ack backup=1 address_id=1 sender_hmac=auto>
-+0.1    <                                 .  1:1(0)           ack 1     win 256    <nop, nop,         TS val 448955294  ecr 448955294,                 mp_join_ack                           sender_hmac=auto>
++0.0    <  addr[caddr1] > addr[saddr0]   S   0:0(0)                     win 65535  <mss 1460, sackOK, TS val 448955294  ecr 0,          nop, wscale 8, mp_join_syn     address_id=1 token=sha256_32(skey)>
++0.0    >                                S.  0:0(0)           ack 1                <mss 1460, sackOK, TS val 448955294  ecr 448955294,  nop, wscale 8, mp_join_syn_ack address_id=1 sender_hmac=auto>
++0.1    <                                 .  1:1(0)           ack 1     win 256    <nop, nop,         TS val 448955294  ecr 448955294,                 mp_join_ack                  sender_hmac=auto>
 
 // reset both subflows
 +0.0    <  addr[caddr0] > addr[saddr0]   R   1001:1001(0)     ack 1     win 0
