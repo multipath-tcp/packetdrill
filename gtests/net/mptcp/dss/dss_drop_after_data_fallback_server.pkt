@@ -24,7 +24,7 @@
 // The server replies with data, still thinking MPTCP is being used
 +0.0    >  P.  1:101(100)       ack 501                                                        <dss dack8=501 dsn8=1 ssn=1 dll=100 nocs, nop, nop>
 // But the client already did a fallback to TCP, because the two previous packets have been received without MPTCP options
-+0.1    <   .  501:501(0)       ack 101  win 2048
++0.05   <   .  501:501(0)       ack 101  win 2048
 
 +0.0    <  P.  501:601(100)     ack 101  win 2048
 // The server should fallback to TCP, not reset: it didn't get a DATA_ACK, nor data for more than the initial window
