@@ -20,9 +20,9 @@
 +0.2    close(4) = 0
 +0.0      >   .  1:1(0)      ack 1                <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 +0.01     <   .  1:1(0)      ack 1     win 450    <dss dack4=2 dsn4=1 ssn=0 dll=1 nocs fin, nop, nop>
-+0.0      >   .  1:1(0)      ack 1                <dss dack4=2 nocs>
 +0.0      >  F.  1:1(0)      ack 1                <dss dack4=2 nocs>
 +0.0      <   .  1:1(0)      ack 2     win 450    <dss dack4=2 nocs>
++0.0      >   .  2:2(0)      ack 1                <dss dack4=2 nocs>
 
 // reply with a small delay to let the kernel switching to a time-wait socket.
 +0.4      <  F.  1:1(0)      ack 2     win 450    <dss dack4=2 nocs>
