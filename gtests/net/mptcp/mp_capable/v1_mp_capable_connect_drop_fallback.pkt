@@ -28,7 +28,7 @@
 
 +0.01   close(3) = 0
 +0        >  F.  1:1(0)  ack 1             <nop, nop,         TS val 100 ecr 700>
-+0.01     <  F.  1:1(0)  ack 2  win 92     <nop, nop,         TS val 700 ecr 100>
++0        <  F.  1:1(0)  ack 2  win 92     <nop, nop,         TS val 700 ecr 100>
 +0        >  .   2:2(0)  ack 2             <nop, nop,         TS val 100 ecr 700>
 
 
