@@ -14,7 +14,7 @@
 
 +0.0      <  S   0:0(0)                win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO,            nop, nop, mpcapable v1 flags[flag_h] nokey>
 +0.0      >  S.  0:0(0)      ack 1                <mss 1460, nop, nop, sackOK,           nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] key[skey]>
-+0.01     <   .  1:1(0)      ack 1     win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.1      <   .  1:1(0)      ack 1     win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey=2, skey]>
 
 +0.2    accept(3, ..., ...) = 4
 +0.2    close(4) = 0
