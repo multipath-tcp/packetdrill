@@ -14,7 +14,7 @@
 // check the rest is OK
 +0.1    write(3, ..., 1000) = 1000
 +0.0      >  P.  501:1501(1000)  ack 1                <nop, nop, TS val 100 ecr 700, mpcapable v1 flags[flag_h] key[ckey, skey] mpcdatalen 1000, nop, nop>
-+0.1      <   .  1:1(0)          ack 1501  win 225                                  <dss dack8=1001 nocs>
++0.0      <   .  1:1(0)          ack 1501  win 225                                  <dss dack8=1001 nocs>
 
 +0.1    close(3) = 0
 +0.0      >   .  1501:1501(0)    ack 1                <nop, nop, TS val 100 ecr 700, dss dack4=1 dsn8=1001 ssn=0 dll=1 nocs fin, nop, nop>
