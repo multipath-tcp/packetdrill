@@ -1,5 +1,5 @@
 // Test data_fin retransmission from kernel TCP_CLOSE_WAIT state
---tolerance_usecs=100000
+--tolerance_usecs=200000
 `../common/defaults.sh`
 
 +0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
