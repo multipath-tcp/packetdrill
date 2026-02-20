@@ -11,9 +11,9 @@
 +0.0    listen(3, 1) = 0
 
 // The Cookie has already been exchanged before, data can already been exchanged
-+0.0      <  S   0:500(500)                win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] nokey>
++0.1      <  S   0:500(500)                win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] nokey>
 +0.0      >  S.  0:0(0)          ack 501              <mss 1460, sackOK, TS val 100 ecr 100, nop, wscale 8,                          mpcapable v1 flags[flag_h] key[skey]>
-+0.01     <   .  501:501(0)      ack 1     win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey, skey]>
++0.4      <   .  501:501(0)      ack 1     win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey, skey]>
 
 +0.2    accept(3, ..., ...) = 4
 
@@ -26,4 +26,4 @@
 +0.2    read(4, ..., 1000) = 1000
 
 +0.2    close(4) = 0
-+0.01     >   .  1:1(0)          ack 1501                     <nop, nop, TS val 100 ecr 100, dss dack8=1001 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
++0.0      >   .  1:1(0)          ack 1501                     <nop, nop, TS val 100 ecr 100, dss dack8=1001 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
