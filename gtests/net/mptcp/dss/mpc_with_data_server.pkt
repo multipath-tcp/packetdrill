@@ -23,7 +23,7 @@
 // send 1 data segments and ack them
 +0     write(4, ..., 1000) = 1000
 +0       >  P.  1:1001(1000)  ack 101              <dss dack8=101  dsn8=1    ssn=1 dll=1000 nocs, nop, nop>
-+0.1     <   .  101:101(0)    ack 1001  win 225    <dss dack8=1001 dsn8=1    ssn=1 dll=100  nocs, nop, nop>
++0       <   .  101:101(0)    ack 1001  win 225    <dss dack8=1001 dsn8=1    ssn=1 dll=100  nocs, nop, nop>
 
 // read 100 bytes from the MPC+data
 +0.01  read(4, ..., 100) = 100
