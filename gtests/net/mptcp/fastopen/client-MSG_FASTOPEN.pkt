@@ -8,7 +8,7 @@
 +0.0    sendto(3, ..., 500, MSG_FASTOPEN, ..., ...) = -1 EINPROGRESS (Operation now in progress)
 
 +0.0      >  S   0:0(0)                               <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO,          nop, nop, mpcapable v1 flags[flag_h] nokey>
-+0.1      <  S.  0:0(0)          ack 1     win 65535  <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8, FO abcd1234, nop, nop, mpcapable v1 flags[flag_h] key[skey=2]>
++0.4      <  S.  0:0(0)          ack 1     win 65535  <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8, FO abcd1234, nop, nop, mpcapable v1 flags[flag_h] key[skey=2]>
 +0.0      >   .  1:1(0)          ack 1                <nop, nop,         TS val 100 ecr 700,                                       mpcapable v1 flags[flag_h] key[ckey, skey]>
 
 +0.01   close(3) = 0
