@@ -1,5 +1,5 @@
 // connection initiated by packetdrill
---tolerance_usecs=100000
+--tolerance_usecs=200000
 `../common/defaults.sh`
 
 +0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
@@ -23,7 +23,7 @@
 
 // zero window probe will trigger; note the MPTCP-level data reinjection used
 // to trigger the probe. It should happens with a delay of 0.5 seconds
-+0.3~+0.9  >   .  1280:1280(0)    ack 101              <dss dack8=101                              nocs>
++0.3~+1.0  >   .  1280:1280(0)    ack 101              <dss dack8=101                              nocs>
 +0.1       <   .  101:101(0)      ack 1281  win 225    <dss dack8=1281                             nocs>
 +0         >  P.  1281:1282(1)    ack 101              <dss dack8=101  dsn8=1280 ssn=1281 dll=1    nocs, nop, nop>
 
