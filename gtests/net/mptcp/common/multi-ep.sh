@@ -8,7 +8,7 @@ usage() { echo "$0 [-e <endpoints>] [-m <signal|subflow>] [-b]" 1>&2; exit 1; }
 
 # create_endpoints <number of endpoints> <host number> <network number> <prefix length> <is_signal> <is_subflow> <is_backup>
 create_endpoints() {
-    local host= flags= ep=1 nodad= addr= endp= max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} sub=${6:-0} bck=${7:-0}
+    local host= flags= ep=1 nodad= addrs=() addr= endp= max=$1 hn=$2 nn=$3 pl=$4 sig=${5:-0} sub=${6:-0} bck=${7:-0}
 
     [ $sig -eq 1 ] && flags=signal
     [ $sub -eq 1 ] && flags=${flags:+$flags }subflow
@@ -19,6 +19,7 @@ create_endpoints() {
         if [ "$OPT_IP_VERSION" = "ipv6" ]; then
             host=$(printf "%s:%x" "${nn}" "$(($(printf '%d' 0x${hn})+ep))")
             nodad="nodad"
+            addrs=($(ip -6 addr show scope global dev $OPT_LOCAL_DEV | grep "inet6" | awk '{print $2}' | tac || true))
         else
             host=${nn}$((hn+ep))
         fi
@@ -26,6 +27,17 @@ create_endpoints() {
         ip addr add $host/$pl dev $OPT_LOCAL_DEV $nodad
         ip mptcp endpoint add $host $flags
         ep=$((ep+1))
+
+        # compared to v4, with v6, the IP pref is in reverse order of their def
+        # so re-add the old addresses in the reverse order
+        for addr in "${addrs[@]}"; do
+            endp=$(ip mptcp endpoint show | grep -w "${addr%/*}" || true)
+            ip addr del ${addr} dev $OPT_LOCAL_DEV
+            ip addr add ${addr} dev $OPT_LOCAL_DEV $nodad
+            if [ -n "${endp}" ]; then
+                ip mptcp endpoint add ${endp}
+            fi
+        done
     done
 }
 
