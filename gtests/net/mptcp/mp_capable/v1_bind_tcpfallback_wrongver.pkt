@@ -16,6 +16,7 @@
 //  test mibs
 +0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableSYNRX') -eq 0`
 +0     `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableFallbackACK') -eq 0`
++0     `test $(nstat -zjs | jq '.kernel.MPTcpExtInvalidOptionRx') -ge 1`
 
 // ensure that traffic plane is functional and does not use DSS
 

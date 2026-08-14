@@ -8,6 +8,8 @@
 +0.0    fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
 +0.0    fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
 
++0.0    `nstat -n`
+
 // Establish connection and verify that there was no error.
 
 +0.0    connect(3, ..., ...) = -1  EINPROGRESS (Operation now in progress)
@@ -20,6 +22,9 @@
 
 // Check for fallback
 +0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
+
+//  test mib: invalid option (wrong version) rejected by the parser
++0.0    `test $(nstat -zjs | jq '.kernel.MPTcpExtInvalidOptionRx') -ge 1`
 
 // ensure that traffic plane is functional and does not use DSS
 
