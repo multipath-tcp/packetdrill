@@ -57,6 +57,7 @@ struct ipv6 {
 };
 
 #ifdef linux
+#define IPV6_UNICAST_HOPS 16
 #define IPV6_HOPLIMIT   52
 #define IPV6_TCLASS	67
 #endif  /* linux */
