@@ -1,0 +1,34 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
++0     `sysctl -q net.ipv4.tcp_migrate_req=1`
++0     `sysctl -q net.ipv4.tcp_synack_retries=0`
+
+// Reproducer for MP_CAPABLE request token ownership during TCP request
+// migration. The first listener owns the request created by the MP_CAPABLE
+// SYN. A second SO_REUSEPORT listener is added only after that SYN, then the
+// first listener is closed. The request timer migrates the request to the
+// second listener and later destroys it.
+
++0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0     setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0     setsockopt(3, SOL_SOCKET, SO_REUSEPORT, [1], 4) = 0
++0     getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0     bind(3, ..., ...) = 0
++0     listen(3, 1) = 0
+
++0       <  S   0:0(0)         win 32792  <mss 1000, sackOK, nop, nop, nop, wscale 7, mpcapable v1 flags[flag_h] nokey>
++0       >  S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
+
++0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 4
++0     setsockopt(4, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0     setsockopt(4, SOL_SOCKET, SO_REUSEPORT, [1], 4) = 0
++0     getsockopt(4, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0     bind(4, ..., ...) = 0
++0     listen(4, 1) = 0
+
++0     close(3) = 0
+
+// Let the request timer migrate the request to fd 4 and let it expire.
++1.1   `true`
+
++0     close(4) = 0
