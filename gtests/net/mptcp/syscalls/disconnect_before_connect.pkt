@@ -1,0 +1,6 @@
+// try do disconnect a newly created socket
+--tolerance_usecs=100000
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
+
++0    connect(3, AF_UNSPEC,...) = 0
