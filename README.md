@@ -23,7 +23,7 @@ packetdrill. If you are on a Linux system based on Debian/Ubuntu then you can
 use a command like:
 
 ```
-sudo apt install git gcc make bison flex python3 net-tools
+sudo apt install git gcc make bison flex python3 net-tools iptables
 ```
 
 To check out and build packetdrill:
@@ -33,6 +33,24 @@ git clone https://github.com/google/packetdrill.git
 cd packetdrill/gtests/net/packetdrill
 ./configure
 make
+```
+
+To build with PSP support, install the OpenSSL development headers,
+recursively clone the ynl-c submodule, and pass `ENABLE_PSP=1` to make:
+
+```
+sudo apt install libssl-dev
+git clone --recurse-submodules https://github.com/google/packetdrill.git
+cd packetdrill/gtests/net/packetdrill
+./configure
+make ENABLE_PSP=1
+```
+
+If you already have a packetdrill checkout and want to pull in the
+ynl-c submodule incrementally, run:
+
+```
+git submodule update --init --recursive
 ```
 
 # How To Run All Local Tests for Linux
