@@ -1,0 +1,23 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
++0    `../common/multi-ep.sh -e 0`
+
+// Initialize a server socket
+    0 socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
+   +0 setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+   +0 setsockopt(3, SOL_IP, IP_FREEBIND, [1], 4) = 0
+   +0 bind(3, ..., ...) = 0
+   +0 listen(3, 1) = 0
+
+// Connection should get accepted
+   +0   <  addr[caddr0] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, sackOK, TS val 4074410674 ecr 0,          nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
+   +0   >                               S.  0:0(0)  ack 1             <mss 1460, sackOK, TS val 4074410674 ecr 4074410674, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
+   +0.1 <                                .  1:1(0)  ack 1  win 256    <nop, nop,         TS val 4074410674 ecr 4074410674,                mpcapable v1 flags[flag_h] key[ckey=2, skey]>
+   +0 accept(3, ..., ...) = 4
+
+   +0 pipe([5, 6]) = 0
+
+   +0 < P. 1:101(100) ack 1 win 257
+   +0 splice(4, NULL, 6, NULL, 99, 0) = 99
+   +0 splice(4, NULL, 6, NULL, 1, 0) = 1
