@@ -1,6 +1,6 @@
 all: binaries
 
-CFLAGS = -g -Wall -Werror -Wno-address-of-packed-member
+CFLAGS = -g -Wall -Werror -Wno-address-of-packed-member $(packetdrill-extra-cflags)
 
 parser.o: parser.y
 	bison --output=parser.c --defines=parser.h --report=state parser.y
@@ -20,7 +20,7 @@ packetdrill-lib := \
          symbols_openbsd.o \
          symbols_netbsd.o \
          gre_packet.o icmp_packet.o ip_packet.o tcp_packet.o udp_packet.o \
-         mpls_packet.o \
+         mpls_packet.o psp_packet.o \
          run.o run_command.o run_packet.o run_system_call.o \
          script.o socket.o system.o \
          tcp_options.o tcp_options_iterator.o tcp_options_to_string.o \
@@ -30,12 +30,14 @@ packetdrill-lib := \
          wire_client.o wire_client_netdev.o \
          wire_server.o wire_server_netdev.o \
 	 epoll.o pipe.o file.o so_testing.o wrap.o \
-	 mptcp_utils.o mptcp.o queue/queue.o
+         psp_state.o \
+	 mptcp_utils.o mptcp.o queue/queue.o \
+         $(packetdrill-extra-objs)
 
 packetdrill-objs := packetdrill.o $(packetdrill-lib)
 
-packetdrill: $(packetdrill-objs)
-	$(CC) -o packetdrill -g $(packetdrill-objs) $(packetdrill-ext-libs)
+packetdrill: $(packetdrill-objs) $(packetdrill-extra-static-libs)
+	$(CC) -o packetdrill -g $(packetdrill-objs) $(packetdrill-extra-static-libs) $(packetdrill-ext-libs)
 
 test-bins := checksum_test packet_parser_test packet_to_string_test
 tests: $(test-bins)
@@ -46,19 +48,19 @@ tests: $(test-bins)
 binaries: packetdrill $(test-bins)
 
 checksum_test-objs := $(packetdrill-lib) checksum_test.o
-checksum_test: $(checksum_test-objs)
-	$(CC) -o checksum_test $(checksum_test-objs) $(packetdrill-ext-libs)
+checksum_test: $(checksum_test-objs) $(packetdrill-extra-static-libs)
+	$(CC) -o checksum_test $(checksum_test-objs) $(packetdrill-extra-static-libs) $(packetdrill-ext-libs)
 
 packet_parser_test-objs := $(packetdrill-lib) packet_parser_test.o
-packet_parser_test: $(packet_parser_test-objs)
+packet_parser_test: $(packet_parser_test-objs) $(packetdrill-extra-static-libs)
 	$(CC) -o packet_parser_test $(packet_parser_test-objs) \
-                $(packetdrill-ext-libs)
+                $(packetdrill-extra-static-libs) $(packetdrill-ext-libs)
 
 packet_to_string_test-objs := $(packetdrill-lib) packet_to_string_test.o
-packet_to_string_test: $(packet_to_string_test-objs)
+packet_to_string_test: $(packet_to_string_test-objs) $(packetdrill-extra-static-libs)
 	$(CC) -o packet_to_string_test $(packet_to_string_test-objs) \
-                $(packetdrill-ext-libs)
+                $(packetdrill-extra-static-libs) $(packetdrill-ext-libs)
 
 clean:
 	/bin/rm -f *.o packetdrill lexer.c parser.c parser.h parser.output \
-                $(test-bins)
+                $(test-bins) $(packetdrill-extra-static-libs)
