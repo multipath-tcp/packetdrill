@@ -48,5 +48,5 @@
 
 // client sends DATA-FIN, subflows ack it
 +0.0    <  addr[caddr1] > addr[saddr1]   .  11:11(0)      ack 201  win 256                                              <dss dack8=201 dsn8=15 dll=1 nocs fin, nop, nop>
-+0.0    >  addr[saddr0] > addr[caddr0]   .  1:1(0)        ack 5             <nop, nop, TS val 448955294 ecr 448955294,   dss dack4=16  nocs>
++0.0    >  addr[saddr0] > addr[caddr0]   .  1:1(0)        ack 5             <nop, nop, TS val 448955294 ecr 4074418292,   dss dack4=16  nocs>
 +0.0    >  addr[saddr1] > addr[caddr1]   .  201:201(0)    ack 11            <nop, nop, TS val 448955294 ecr 448955294,   dss dack4=16  nocs>
