@@ -27,7 +27,7 @@
 +0.0      <   .  1:1(0)  ack 101  win 256  <nop, nop, TS val 705 ecr 305, add_address address_id=11 addr[ep=inet6_addr("2001:db8::c1:a0")] hmac=auto>
 
 // ADD_ADDR echo (without hmac)
-+0.0      >   .  101:101(0)  ack 1         <nop, nop, TS val 494 ecr 700, add_address address_id=11 addr[ep=inet6_addr("2001:db8::c1:a0")] addr_echo>
++0.0      >   .  101:101(0)  ack 1         <nop, nop, TS val 494 ecr 705, add_address address_id=11 addr[ep=inet6_addr("2001:db8::c1:a0")] addr_echo>
 
 +0.0    close(3) = 0
-+0.0      >   .  101:101(0)  ack 1         <nop, nop, TS val 494 ecr 700, dss dack4=1 dsn8=101 ssn=0 dll=1 nocs fin, nop, nop>
++0.0      >   .  101:101(0)  ack 1         <nop, nop, TS val 494 ecr 705, dss dack4=1 dsn8=101 ssn=0 dll=1 nocs fin, nop, nop>
