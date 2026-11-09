@@ -1,0 +1,28 @@
+// Regression test: an MP_JOIN SYN with a valid TFO cookie must not queue
+// a destroyed child.
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
+// MPTCP listener with server-side Fast Open enabled.
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  setsockopt(3, SOL_TCP, TCP_FASTOPEN, [2], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
++0.0  bind(3, ..., ...) = 0
++0.0  listen(3, 1) = 0
+
+// Obtain a TFO cookie and learn the server key.
++0.1  <  addr[caddr0] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, FO,            nop, nop, mpcapable v1 flags[flag_h] nokey>
++0.0  >                               S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK,           nop, wscale 8, FO TFO_COOKIE, nop, nop, mpcapable v1 flags[flag_h] key[skey]>
++0.2  <                                .  1:1(0)  ack 1  win 450    <                                                                              mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.0  accept(3, ..., ...) = 4
+
+// Use a new source port with the same address; the cookie remains valid.
++0.1  <  addr[caddr1] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, sackOK, nop, wscale 8, FO TFO_COOKIE, nop, nop, mp_join_syn address_id=1 token=sha256_32(skey), nop, nop>
+
+// Normal SYN processing expected: send a SYN/ACK without TFO cookie.
++0.0  >  addr[saddr0] > addr[caddr1]  S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mp_join_syn_ack address_id=0 sender_hmac=auto>
+
+// Without the final ACK, the request must remain in the SYN queue.
++0.2  accept(3, ..., ...) = -1 EAGAIN (Resource temporarily unavailable)
