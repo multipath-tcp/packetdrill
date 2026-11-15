@@ -23,7 +23,7 @@
 
 // clearing TCP_CORK should push pending bytes out
 +0.01  setsockopt(4, SOL_TCP, TCP_CORK, [0], 4) = 0
-+0.0     >  P.  1:81(80)     ack 1               <nop, nop, TS val 448955294 ecr 448955294, dss dack4=1  dsn8=1   ssn=1    dll=80  nocs, nop, nop>
++0.0     >  P.  1:81(80)     ack 1               <nop, nop, TS val 448955294 ecr 4074410674, dss dack4=1  dsn8=1   ssn=1    dll=80  nocs, nop, nop>
 +0.01    <   .  1:1(0)       ack 81   win 256    <nop, nop, TS val 448955294 ecr 448955294, dss dack4=81 nocs>
 
 // set TCP_CORK once again

@@ -39,6 +39,8 @@
 #include "packet.h"
 #include "packet_checksum.h"
 #include "packet_to_string.h"
+#include "psp_packet.h"
+#include "psp_state.h"
 #include "run.h"
 #include "script.h"
 #include "tcp.h"
@@ -221,7 +223,7 @@ static struct socket *handle_listen_for_script_packet(
 	assert(socket->state == SOCKET_INIT);
 	socket->state = SOCKET_PASSIVE_PACKET_RECEIVED;
 	socket->address_family = packet_address_family(packet);
-	socket->protocol = packet_ip_protocol(packet);
+	socket->protocol = IPPROTO_TCP;
 
 	/* Set script info for this socket using script packet. */
 	struct tuple tuple;
@@ -1464,6 +1466,33 @@ static int verify_gre(
 	return STATUS_OK;
 }
 
+/* Verify that required actual PSP header fields are as the script expected. */
+static int verify_psp(
+	const struct packet *actual_packet,
+	const struct packet *script_packet,
+	int layer, bool strict, char **error)
+{
+	const struct psp *actual_psp = actual_packet->headers[layer].h.psp;
+	const struct psp *script_psp = script_packet->headers[layer].h.psp;
+
+	if (check_field("psp_ext_len", script_psp->ext_len, actual_psp->ext_len,
+			error))
+		return STATUS_ERR;
+	if (check_field("psp_next_header", script_psp->next_header,
+			actual_psp->next_header, error))
+		return STATUS_ERR;
+	if (check_field("psp_crypto_offset", script_psp->crypt_offset,
+			actual_psp->crypt_offset, error))
+		return STATUS_ERR;
+	if (check_field("psp_flags", script_psp->flags, actual_psp->flags,
+			error))
+		return STATUS_ERR;
+	if (check_field("psp_spi", ntohl(script_psp->spi),
+			ntohl(actual_psp->spi), error))
+		return STATUS_ERR;
+	return STATUS_OK;
+}
+
 /* Verify that required actual MPLS header fields are as the script expected. */
 static int verify_mpls(
 	const struct packet *actual_packet,
@@ -1554,6 +1583,7 @@ static int verify_header(
 		[HEADER_UDP]	= verify_udp,
 		[HEADER_ICMPV4] = verify_icmpv4,
 		[HEADER_ICMPV6] = verify_icmpv6,
+		[HEADER_PSP]	= verify_psp,
 	};
 	verifier_func verifier = NULL;
 	const struct header *actual_header = &actual_packet->headers[layer];
@@ -1718,6 +1748,10 @@ static int verify_outbound_tcp_option(
 			asprintf(error, "bad outbound TCP timestamp value, tolerance %ld", tolerance_usecs);
 			return STATUS_ERR;
 		}
+		if (check_field("tcp_ts_ecr",
+				ntohl(script_option->data.time_stamp.ecr),
+				ntohl(actual_option->data.time_stamp.ecr), error))
+			return STATUS_ERR;
 		break;
 	case TCPOPT_MPTCP:
 		if (!same_mptcp_opt(actual_option, script_option, actual_packet)) {
@@ -2380,7 +2414,7 @@ out:
 }
 
 /* Checksum the packet and inject it into the kernel under test. */
-static int send_live_ip_packet(struct netdev *netdev,
+static int send_live_ip_packet(struct state *state,
 			       struct packet *packet)
 {
 	assert(packet->ip_bytes > 0);
@@ -2392,7 +2426,12 @@ static int send_live_ip_packet(struct netdev *netdev,
 	/* Fill in layer 3 and layer 4 checksums */
 	checksum_packet(packet);
 
-	return netdev_send(netdev, packet);
+	if (packet->psp != NULL) {
+		if (psp_map_to_live(state->psp, packet))
+			return STATUS_ERR;
+	}
+
+	return netdev_send(state->netdev, packet);
 }
 
 /* Perform the action implied by an inbound packet in a script */
@@ -2448,7 +2487,7 @@ static int do_inbound_script_packet(
 	}
 
 	/* Inject live packet into kernel. */
-	result = send_live_ip_packet(state->netdev, live_packet);
+	result = send_live_ip_packet(state, live_packet);
 
 out:
 	packet_free(live_packet);
@@ -2616,7 +2655,7 @@ int reset_connection(struct state *state, struct socket *socket)
 	}
 
 	packet = new_tcp_packet(socket->address_family,
-				DIRECTION_INBOUND, ip_info, 0, 0,
+				DIRECTION_INBOUND, ip_info, NULL, 0, 0, 0,
 				"R.", seq, 0, ack_seq, window, 0, NULL,
 				&error);
 	if (packet == NULL)
@@ -2627,7 +2666,7 @@ int reset_connection(struct state *state, struct socket *socket)
 	set_packet_tuple(packet, &live_inbound);
 
 	/* Inject live packet into kernel. */
-	result = send_live_ip_packet(state->netdev, packet);
+	result = send_live_ip_packet(state, packet);
 
 	packet_free(packet);
 
