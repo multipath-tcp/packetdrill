@@ -1,0 +1,33 @@
+// Peeking at unread data must leave SO_RCVBUF unchanged.
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
+// Use a small receive buffer so a few peeks expose incorrect accounting.
++0.0  `sysctl -q net.ipv4.tcp_rmem="4096 8192 15728640"`
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  bind(3, ..., ...) = 0
++0.0  listen(3, 1) = 0
+
+// Use TCP timestamps to give the receiver an RTT sample for autotuning.
++0.0    <   S  0:0(0)                  win 65535  <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0    >  S.  0:0(0)        ack 1                <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.1    <   .  1:1(0)        ack 1     win 256    <nop, nop,         TS val 200 ecr 700,                mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.0  accept(3, ..., ...) = 4
+
++0.0    <  P.  1:1001(1000)  ack 1     win 256    <nop, nop,         TS val 300 ecr 700,                mpcapable v1 flags[flag_h] key[skey, ckey] mpcdatalen 1000, nop, nop>
++0.0    >   .  1:1(0)        ack 1001             <nop, nop,         TS val 700 ecr 300,                dss dack8=1001 dll=0 nocs>
+
++0.0  getsockopt(4, SOL_SOCKET, SO_RCVBUF, [8192], [4]) = 0
+
+// Peek at the same unread data within one measurement interval.
++0.0  recv(4, ..., 1000, MSG_PEEK) = 1000
++0.0  recv(4, ..., 1000, MSG_PEEK) = 1000
++0.0  recv(4, ..., 1000, MSG_PEEK) = 1000
++0.0  recv(4, ..., 1000, MSG_PEEK) = 1000
++0.0  recv(4, ..., 1000, MSG_PEEK) = 1000
+
+// Peek again after the interval so autotuning has a chance to grow the buffer.
++0.2  recv(4, ..., 1000, MSG_PEEK) = 1000
++0.0  getsockopt(4, SOL_SOCKET, SO_RCVBUF, [8192], [4]) = 0
